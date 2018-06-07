@@ -317,17 +317,17 @@ void setup()
      }
   delay(1000); 
 
-  if (c == 0x71) // WHO_AM_I should always be 0x68
+  if (c == 0x71) // WHO_AM_I should always be 0x71
   { 
     if (SerialDebug) { 
         Serial.println("MPU9250 is online...");
        }
 
     if (LCD) {
-      display.setCursor(0,0);
-      display.print("MPU9250");
-      display.setCursor(0,1); display.print("Calibrating..");
-    }
+       display.setCursor(0,0);
+       display.print("MPU9250");
+       display.setCursor(0,1); display.print("Calibrating..");
+      }
     getMres();
     getGres();
     getAres();
@@ -342,43 +342,52 @@ void setup()
 
     calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
     initMPU9250(); 
-    if(SerialDebug) {
-      Serial.println("MPU9250 initialized for active data mode...."); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
-    }
+    if (SerialDebug) {
+       Serial.println("MPU9250 initialized for active data mode...."); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
+      }
     delay(1000); 
-  
+
     // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
     byte d = readByte(AK8963_ADDRESS, AK8963_WHO_AM_I);  // Read WHO_AM_I register for AK8963
     if(SerialDebug) {
       Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX); Serial.print(" I should be "); Serial.println(0x48, HEX);
     }
     delay(1000); 
-    
-    // Get magnetometer calibration from AK8963 ROM
-    // Serial.println("AK8963 initialized for active data mode...."); // Initialize device for active mode read of magnetometer
-    initAK8963(magCalibration); 
-   if (LCD) {
-    display.clear();
-    display.print("AK8963");
-    display.setCursor(0,1); display.print("Calibrating..");
-   }
 
-    if (MAG_CALIBRATION)
-        magcalMPU9250(magBias, magScale);
-    else {
-        magBias[0] = -86.03;
-        magBias[1] = 228.66;
-        magBias[2] = -371.48;
-        magScale[0] = 1.08;
-        magScale[1] = 1.08;
-        magScale[2] = 0.88;   
+    if (d == 0x48) {
+       // Get magnetometer calibration from AK8963 ROM
+       // Serial.println("AK8963 initialized for active data mode...."); // Initialize device for active mode read of magnetometer
+       initAK8963(magCalibration); 
+       if (LCD) {
+          display.clear();
+          display.print("AK8963");
+          display.setCursor(0,1); display.print("Calibrating..");
+         }
+
+       if (MAG_CALIBRATION)
+           magcalMPU9250(magBias, magScale);
+       else {
+           magBias[0] = -86.03;
+           magBias[1] = 228.66;
+           magBias[2] = -371.48;
+           magScale[0] = 1.08;
+           magScale[1] = 1.08;
+           magScale[2] = 0.88;   
+          }
+       delay(1000);
       }
-
-    delay(1000);
-
-    initModulator();
-    currentTime = 0;
-    ProgramBeginTime = millis()/1000;
+    else
+      {
+        if (SerialDebug) {
+            Serial.print("Could not connect to AK8963: 0x");
+            Serial.println(d, HEX);
+          }
+        if (LCD) {
+            display.print("CAN'T CONNECT");
+            display.setCursor(0,1); display.print("TO AK8963!");
+          }
+        while(1) ; // Loop forever if communication doesn't happen
+      }
   }
   else
   {

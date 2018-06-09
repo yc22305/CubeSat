@@ -354,7 +354,7 @@ void setup()
     }
     delay(1000); 
 
-    if (d == 0x48) {
+    if (d == 0x48) { // WHO_AM_I should always be 0x48
        // Get magnetometer calibration from AK8963 ROM
        // Serial.println("AK8963 initialized for active data mode...."); // Initialize device for active mode read of magnetometer
        initAK8963(magCalibration); 

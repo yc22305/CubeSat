@@ -1,35 +1,7 @@
-/* MPU9250 Basic Example Code
- by: Kris Winer
- date: April 1, 2014
- license: Beerware - Use this code however you'd like. If you 
- find it useful you can buy me a beer some time.
- 
- Demonstrate basic MPU-9250 functionality including parameterizing the register addresses, initializing the sensor, 
- getting properly scaled accelerometer, gyroscope, and magnetometer data out. Added display functions to 
- allow display to on breadboard monitor. Addition of 9 DoF sensor fusion using open source Madgwick and 
- Mahony filter algorithms. Sketch runs on the 3.3 V 8 MHz Pro Mini and the Teensy 3.1.
- 
- SDA and SCL should have external pull-up resistors (to 3.3V).
- 10k resistors are on the EMSENSR-9250 breakout board.
- 
- Hardware setup:
- MPU9250 Breakout --------- Arduino
- VDD ---------------------- 3.3V
- VDDI --------------------- 3.3V
- SDA ----------------------- A4
- SCL ----------------------- A5
- GND ---------------------- GND
- 
- Note: The MPU9250 is an I2C sensor and uses the Arduino Wire library. 
- Because the sensor is not 5V tolerant, we are using a 3.3 V 8 MHz Pro Mini or a 3.3 V Teensy 3.1.
- We have disabled the internal pull-ups used by the Wire library in the Wire.h/twi.c utility file.
- We are also using the 400 kHz fast I2C mode by setting the TWI_FREQ  to 400000L /twi.h utility file.
- */
 #include <SPI.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C_Wire1.h>
 #include <Utility.h>
-#include <cstdlib>   
 
 // Using I2C LCD monochrome 84 x 48 pixel display
 LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -196,7 +168,6 @@ LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 c
 #define SerialDebug false   // set to true to get Serial output for debugging
 #define MAG_CALIBRATION false // set true to do magnetic calibration
 #define LCD false // set true to print on LCD
-#define OPEN_GL true // set to true to diaplay 3D graph on PC screen
 
 // Set initial input parameters
 enum Ascale {
@@ -254,8 +225,8 @@ float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;   // compute zeta, the other fre
 #define Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
 #define Ki 0.0f
 
-uint32_t delt_t = 0, delt_t_openGL = 0; // used to control display output rate
-uint32_t count = 0, count_openGL = 0, sumCount = 0; // used to control display output rate
+uint32_t delt_t = 0; // used to control display output rate
+uint32_t count = 0, sumCount = 0; // used to control display output rate
 float pitch, yaw, roll;
 float deltat = 0.0f, sum = 0.0f;        // integration interval for both filter schemes
 uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
@@ -267,7 +238,6 @@ float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for M
 
 char angle_info[30];
 
-#define MAG_DECLINE -3.5f
 #define MAG_DECLINE_RAD -3.5f/180*PI
 
 // cubesate and thruster properties
@@ -290,8 +260,6 @@ float Expectation, Error, angle_sensor, angu_v_sensor;
 float Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).
 int thrust_switch; // status of thruster (on/off with direction)
-
-int i;
 
 void setup()
 {
@@ -324,6 +292,7 @@ void setup()
        }
 
     if (LCD) {
+       display.clear();
        display.setCursor(0,0);
        display.print("MPU9250");
        display.setCursor(0,1); display.print("Calibrating..");
@@ -367,7 +336,7 @@ void setup()
        if (MAG_CALIBRATION)
            magcalMPU9250(magBias, magScale);
        else {
-           magBias[0] = -86.03;
+           magBias[0] = -86.03; // determined by previous test of the magnetometer
            magBias[1] = 228.66;
            magBias[2] = -371.48;
            magScale[0] = 1.08;
@@ -383,6 +352,7 @@ void setup()
             Serial.println(d, HEX);
           }
         if (LCD) {
+            display.clear();
             display.print("CAN'T CONNECT");
             display.setCursor(0,1); display.print("TO AK8963!");
           }
@@ -391,51 +361,47 @@ void setup()
   }
   else
   {
-    if(SerialDebug) {
+    if (SerialDebug) {
       Serial.print("Could not connect to MPU9250: 0x");
       Serial.println(c, HEX);
     }
     if (LCD) {
+      display.clear();
       display.print("CAN'T CONNECT");
       display.setCursor(0,1); display.print("TO MPU9250!");
     }
     while(1) ; // Loop forever if communication doesn't happen
   }
-
-  initModulator();
-  currentTime = 0;
-  ProgramBeginTime = millis()/1000;
 }
 
 void loop()
 {  
   // If intPin goes high, all data registers have new data
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {  // On interrupt, check if data ready interrupt
-    
-    readAccelData(accelCount);  // Read the x/y/z adc values
-    // Now we'll calculate the accleration value into actual g's
-    ax = (float)accelCount[0]*aRes - accelBias[0];  // get actual g value, this depends on scale being set
-    ay = (float)accelCount[1]*aRes - accelBias[1];   
-    az = (float)accelCount[2]*aRes - accelBias[2];  
+     readAccelData(accelCount);  // Read the x/y/z adc values
+     // Now we'll calculate the accleration value into actual g's
+     ax = (float)accelCount[0]*aRes - accelBias[0];  // get actual g value, this depends on scale being set
+     ay = (float)accelCount[1]*aRes - accelBias[1];   
+     az = (float)accelCount[2]*aRes - accelBias[2];  
    
-    readGyroData(gyroCount);  // Read the x/y/z adc values 
-    // Calculate the gyro value into actual degrees per second
-    gx = (float)gyroCount[0]*gRes;  // get actual gyro value, this depends on scale being set
-    gy = (float)gyroCount[1]*gRes;  
-    gz = (float)gyroCount[2]*gRes;   
+     readGyroData(gyroCount);  // Read the x/y/z adc values 
+     // Calculate the gyro value into actual degrees per second
+     gx = (float)gyroCount[0]*gRes;  // get actual gyro value, this depends on scale being set
+     gy = (float)gyroCount[1]*gRes;  
+     gz = (float)gyroCount[2]*gRes;   
 
-    readMagData(magCount);  // Read the x/y/z adc values    
-    mx_temp = (float)magCount[0]*mRes*magCalibration[0] - magBias[0];  // get actual magnetometer value, this depends on scale being set
-    my_temp = (float)magCount[1]*mRes*magCalibration[1] - magBias[1];  
-    mz_temp = (float)magCount[2]*mRes*magCalibration[2] - magBias[2]; 
-    mx_temp *= magScale[0];
-    my_temp *= magScale[1];
-    mz_temp *= magScale[2];
-    // calibrate the magnetic decline
-    mx = cos(-MAG_DECLINE_RAD)*mx_temp - sin(-MAG_DECLINE_RAD)*my_temp;
-    my = sin(-MAG_DECLINE_RAD)*mx_temp + cos(-MAG_DECLINE_RAD)*my_temp;
-    mz = mz_temp;
-   }
+     readMagData(magCount);  // Read the x/y/z adc values    
+     mx_temp = (float)magCount[0]*mRes*magCalibration[0] - magBias[0];  // get actual magnetometer value, this depends on scale being set
+     my_temp = (float)magCount[1]*mRes*magCalibration[1] - magBias[1];  
+     mz_temp = (float)magCount[2]*mRes*magCalibration[2] - magBias[2]; 
+     mx_temp *= magScale[0];
+     my_temp *= magScale[1];
+     mz_temp *= magScale[2];
+     // calibrate the magnetic decline
+     mx = cos(-MAG_DECLINE_RAD)*mx_temp - sin(-MAG_DECLINE_RAD)*my_temp;
+     my = sin(-MAG_DECLINE_RAD)*mx_temp + cos(-MAG_DECLINE_RAD)*my_temp;
+     mz = mz_temp;
+    }
   
   Now = micros();
   deltat = ((Now - lastUpdate)/1000000.0f); // set integration time by time elapsed since last filter update
@@ -484,145 +450,124 @@ void loop()
       }
     }
   else {
-      
       // Serial print and/or display at 0.5 s rate independent of data rates
       delt_t = millis() - count;
       if (delt_t > 500) { // update LCD once per half-second independent of read rate
-        if (SerialDebug) {    
-           Serial.print("ax = "); Serial.print((int)1000*ax);  
-           Serial.print(" ay = "); Serial.print((int)1000*ay); 
-           Serial.print(" az = "); Serial.print((int)1000*az); Serial.println(" mg");
-           Serial.print("gx = "); Serial.print( gx, 2); 
-           Serial.print(" gy = "); Serial.print( gy, 2); 
-           Serial.print(" gz = "); Serial.print( gz, 2); Serial.println(" deg/s");
-           Serial.print("mx = "); Serial.print( (int)mx ); 
-           Serial.print(" my = "); Serial.print( (int)my ); 
-           Serial.print(" mz = "); Serial.print( (int)mz ); Serial.println(" mG");
+         if (SerialDebug) {    
+            Serial.print("ax = "); Serial.print((int)1000*ax);  
+            Serial.print(" ay = "); Serial.print((int)1000*ay); 
+            Serial.print(" az = "); Serial.print((int)1000*az); Serial.println(" mg");
+            Serial.print("gx = "); Serial.print( gx, 2); 
+            Serial.print(" gy = "); Serial.print( gy, 2); 
+            Serial.print(" gz = "); Serial.print( gz, 2); Serial.println(" deg/s");
+            Serial.print("mx = "); Serial.print( (int)mx ); 
+            Serial.print(" my = "); Serial.print( (int)my ); 
+            Serial.print(" mz = "); Serial.print( (int)mz ); Serial.println(" mG");
     
-           Serial.print("q0 = "); Serial.print(q[0]);
-           Serial.print(" qx = "); Serial.print(q[1]); 
-           Serial.print(" qy = "); Serial.print(q[2]); 
-           Serial.print(" qz = "); Serial.println(q[3]); 
-          }               
+            Serial.print("q0 = "); Serial.print(q[0]);
+            Serial.print(" qx = "); Serial.print(q[1]); 
+            Serial.print(" qy = "); Serial.print(q[2]); 
+            Serial.print(" qz = "); Serial.println(q[3]); 
+           }               
     
-      // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
-      // In this coordinate system, the positive z-axis is down toward Earth. 
-      // Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
-      // Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is negative, up toward the sky is positive.
-      // Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
-      // These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
-      // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
-      // applied in the correct order which for this configuration is yaw, pitch, and then roll.
-      // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
-      yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
-      pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-      roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
-      pitch *= 180.0f / PI;
-      yaw   *= 180.0f / PI; 
-      roll  *= 180.0f / PI;
+         // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
+         // In this coordinate system, the positive z-axis is down toward Earth. 
+         // Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
+         // Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is negative, up toward the sky is positive.
+         // Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
+         // These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
+         // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
+         // applied in the correct order which for this configuration is yaw, pitch, and then roll.
+         // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
+         yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
+         pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
+         roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+         pitch *= 180.0f / PI;
+         yaw   *= 180.0f / PI; 
+         roll  *= 180.0f / PI;
 
-      // controller
-      Expectation = 0; // the angle we want to track. Expectation = 0 represents pointing toward North.
+         // controller
+         Expectation = 0; // the angle we want to track. Expectation = 0 represents pointing toward North.
 
-      angle_sensor = getAngle();
-      angu_v_sensor = getAnguV();
-      Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
-      if (SerialDebug) {
-         Serial.print("deadband: "); Serial.println(deadband);
-         Serial.print("thrust_M_design: "); Serial.println(thrust_M_design);
-         Serial.print("Uplimit: "); Serial.println(uplimit);
-         Serial.print("Error: "); Serial.println(Error);
-        }
-
-      // control value determination
-      if (abs(Error) >= uplimit)  
-        Control_value = sign(Error)*thrust_M_design;
-      else {
-         if (abs(Error) >= deadband) 
-             Control_value = Error;
-         else
-             Control_value = 0;
-        }
-
-      if (SerialDebug) {
-         Serial.print("Control value: "); Serial.println(Control_value);
-        }
-
-      // thruster status determination
-      if (time_last_on > time_last_off) { // thrusters are on.
-         if (abs(Control_value) >= Control_value_min)
-             duration_on = off_duration_min*abs(Control_value)/(thrust_M_design-abs(Control_value));
-         else
-             duration_on = on_duration_min;
-
-         currentTime = millis()/1000-ProgramBeginTime;
-         if (currentTime-time_last_on < duration_on)
-             thrust_switch = sign(Control_value);
-         else {
-             thrust_switch = 0;
-             time_last_off = currentTime;
+         angle_sensor = getAngle();
+         angu_v_sensor = getAnguV();
+         Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
+         if (SerialDebug) {
+            Serial.print("deadband: "); Serial.println(deadband);
+            Serial.print("thrust_M_design: "); Serial.println(thrust_M_design);
+            Serial.print("Uplimit: "); Serial.println(uplimit);
+            Serial.print("Error: "); Serial.println(Error);
            }
-        }        
-      else { // thrusters are off.
-         duration_cycle = thrust_M_design*duration_on/abs(Control_value);
-         if (duration_cycle < duration_on+off_duration_min) // Minimum cycle due to thruster restrcition
-             duration_cycle = duration_on+off_duration_min;
 
-         currentTime = millis()/1000-ProgramBeginTime;
-         if (currentTime < duration_cycle-duration_on)
-             thrust_switch = 0;           
+         // control value determination
+         if (abs(Error) >= uplimit)  
+            Control_value = sign(Error)*thrust_M_design;
          else {
-             thrust_switch = sign(Control_value);
-             time_last_on = currentTime;
-            }
-        }
+            if (abs(Error) >= deadband) 
+               Control_value = Error;
+            else
+               Control_value = 0;
+           }
 
-      activateThruster();
+         if (SerialDebug) {
+            Serial.print("Control value: "); Serial.println(Control_value);
+           }
+
+         // thruster status determination
+         if (time_last_on > time_last_off) { // thrusters are on.
+            if (abs(Control_value) >= Control_value_min)
+               duration_on = off_duration_min*abs(Control_value)/(thrust_M_design-abs(Control_value));
+            else
+               duration_on = on_duration_min;
+
+            currentTime = millis()/1000-ProgramBeginTime;
+            if (currentTime-time_last_on < duration_on)
+               thrust_switch = sign(Control_value);
+            else {
+               thrust_switch = 0;
+               time_last_off = currentTime;
+              }
+           }        
+         else { // thrusters are off.
+            duration_cycle = thrust_M_design*duration_on/abs(Control_value);
+            if (duration_cycle < duration_on+off_duration_min) // Minimum cycle due to thruster restrcition
+               duration_cycle = duration_on+off_duration_min;
+
+            currentTime = millis()/1000-ProgramBeginTime;
+            if (currentTime < duration_cycle-duration_on)
+               thrust_switch = 0;           
+            else {
+               thrust_switch = sign(Control_value);
+               time_last_on = currentTime;
+              }
+           }
+
+         activateThruster();
      
-      if(SerialDebug) {
-         Serial.print("Yaw, Pitch, Roll: ");
-         Serial.print(yaw, 1);
-         Serial.print(", ");
-         Serial.print(pitch, 1);
-         Serial.print(", ");
-         Serial.println(roll, 1);
+         if (SerialDebug) {
+            Serial.print("Yaw, Pitch, Roll: ");
+            Serial.print(yaw, 1);
+            Serial.print(", ");
+            Serial.print(pitch, 1);
+            Serial.print(", ");
+            Serial.println(roll, 1);
     
-         Serial.print("rate = "); Serial.print((float)sumCount/sum, 2); Serial.println(" Hz");
-        }
+            Serial.print("rate = "); Serial.print((float)sumCount/sum, 2); Serial.println(" Hz");
+           }
 
-      if (LCD) {
-         display.clear();
-         display.print("Yaw  Pitch  Roll");
-         display.setCursor(0,1); display.print(yaw, 0);
-         display.setCursor(5,1); display.print(pitch, 0);
-         display.setCursor(12,1); display.print(roll, 0);
-        }
+         if (LCD) {
+            display.clear();
+            display.print("Yaw  Pitch  Roll");
+            display.setCursor(0,1); display.print(yaw, 0);
+            display.setCursor(5,1); display.print(pitch, 0);
+            display.setCursor(12,1); display.print(roll, 0);
+           }
 
-      count = millis(); 
-      sumCount = 0;
-      sum = 0;    
-     }
-   }
-  
-  if (OPEN_GL) { // send information to PC and show 3D graph
-      delt_t_openGL = millis() - count_openGL;
-      if (delt_t_openGL > 200) { // send information per 200 milliseconds
-          for (i=0; i<30; i++) { // 30 is buffer length
-              angle_info[i] = 0;            
-            }
-          yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
-          pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-          roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
-          pitch *= 180.0f / PI;
-          yaw   *= 180.0f / PI; 
-          roll  *= 180.0f / PI;
-          sprintf(angle_info, "%.2f %.2f %.2f", yaw, pitch, roll);
-          //Serial.write(angle_info);
-          Serial.print(angle_info);
-          
-          count_openGL = millis();
-        } 
-    }          
+         count = millis(); 
+         sumCount = 0;
+         sum = 0;  
+        }
+    }       
 }
 
 //===================================================================================================================

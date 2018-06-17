@@ -1,4 +1,4 @@
-/*rosserial_arduino package shouel be installed*/
+/*rosserial_arduino package should be installed*/
 
 #define _SAM3XA_ // For arduino DUE
 #define USE_USBCON // For arduino except Leonardo version
@@ -11,7 +11,7 @@
 #include <ros/time.h>
 #include <tf/transform_broadcaster.h>
 
-#define BAUD 9600
+#define BAUD 57600
 
 // Using I2C LCD monochrome 84 x 48 pixel display
 LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -175,7 +175,7 @@ LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 c
 #endif  
 
 #define AHRS true         // set to false for basic data read
-#define SerialDebug false   // set to true to get Serial output for debugging
+#define SerialDebug true   // set to true to get Serial output for debugging
 #define MAG_CALIBRATION false // set true to do magnetic calibration
 #define LCD false // set true to print on LCD
 #define ATTITUDE_DISPLAY true // set to true to diaplay 3D graph on PC screen
@@ -526,8 +526,8 @@ void loop()
          yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);   
          pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
          roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
-         pitch *= 180.0f / PI;
          yaw   *= 180.0f / PI; 
+         pitch *= 180.0f / PI;
          roll  *= 180.0f / PI;              
 
          // controller
@@ -536,12 +536,12 @@ void loop()
          angle_sensor = getAngle();
          angu_v_sensor = getAnguV();
          Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
-         if (SerialDebug) {
+       /*  if (SerialDebug) {
             Serial.print("deadband: "); Serial.println(deadband);
             Serial.print("thrust_M_design: "); Serial.println(thrust_M_design);
             Serial.print("Uplimit: "); Serial.println(uplimit);
             Serial.print("Error: "); Serial.println(Error);
-           }
+           }*/
 
          // control value determination
          if (abs(Error) >= uplimit)  
@@ -553,9 +553,9 @@ void loop()
                Control_value = 0;
            }
 
-         if (SerialDebug) {
+        /* if (SerialDebug) {
             Serial.print("Control value: "); Serial.println(Control_value);
-           }
+           }*/
 
          // thruster status determination
          if (time_last_on > time_last_off) { // thrusters are on.

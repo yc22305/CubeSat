@@ -4,7 +4,6 @@
 % - noise
 % - moment caused by friction (or other disturbance)
 % - When we practice the program (physic systems instead of simulation), there will be constant problems. Calculation of the derivative of switching function is necessary to determine the consition of thrusters.
-% - position of new "zero angle"
 % - check availability of thrusters (clock simulation)
 %% symbal
 s=tf('s');

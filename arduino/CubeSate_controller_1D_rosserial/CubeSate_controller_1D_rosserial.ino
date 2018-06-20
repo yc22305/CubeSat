@@ -10,8 +10,14 @@
 #include <ros.h>
 #include <ros/time.h>
 #include <tf/transform_broadcaster.h>
+#include <std_srvs/SetBool.h>
+#include <serial_srvs/DesiredValue.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/Int16.h>
 
 #define BAUD 57600
+#define CONTROL_PERIOD 200 // set the time interval (millisecond) between each control determination
 
 // Using I2C LCD monochrome 84 x 48 pixel display
 LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -175,9 +181,10 @@ LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 c
 #endif  
 
 #define AHRS true         // set to false for basic data read
-#define SerialDebug true   // set to true to get Serial output for debugging
+#define SerialDebug false   // set to true to get Serial output for debugging
+#define ROS_REPORT true  // set to ture to get ros messages for debugging
 #define MAG_CALIBRATION false // set true to do magnetic calibration
-#define LCD false // set true to print on LCD
+#define LCD true // set true to print on LCD
 #define ATTITUDE_DISPLAY true // set to true to diaplay 3D graph on PC screen
 
 // Set initial input parameters
@@ -208,7 +215,7 @@ uint8_t Mmode = 0x02;        // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer
 float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
   
 // Pin definitions
-int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
+int intPin = 12;  // These can be changed, 2 and 3 are the Arduino ext int pins
 int myLed = 13; // Set up pin 13 led for toggling
 
 int16_t accelCount[3];  // Stores the 16-bit signed accelerometer sensor output
@@ -236,7 +243,7 @@ float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;   // compute zeta, the other fre
 #define Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
 #define Ki 0.0f
 
-uint32_t delt_t = 0; // used to control display output rate
+uint32_t delt_t = 0; // rate of control value determination
 uint32_t count = 0, sumCount = 0; // used to control display output rate
 float pitch, yaw, roll;
 float deltat = 0.0f, sum = 0.0f;        // integration interval for both filter schemes
@@ -259,30 +266,71 @@ float thrust_M_design = 0.4f*(l/2.0f)*(3/4.0f);// desirable moment in outerspace
 float on_duration_min = 0.03f; // thruster restrcition of turning on
 float off_duration_min = 0.03f; // thrusster restrcition of turnning off
 float Control_value_min = thrust_M_design*on_duration_min/(on_duration_min+off_duration_min);
+bool ifPowerThruster;
 
+//// controller related parameters
 float K_angle = 0.3f; // feedback gain for angle position   
 float K_angu_v = 0.6f; // feedback gain for angular velocity
-
-// controller related parameters
 float uplimit = thrust_M_design; 
-float deadband = uplimit*0.75f; // within +-3 degree angles, thrusters are not activated.
-
-float Expectation, Error, angle_sensor, angu_v_sensor;
+float deadband = uplimit*0.75f; // this deadband is determined by experiments.
+float DesiredValue, Error, angle_sensor, angu_v_sensor;
 float Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).
 int thrust_switch; // status of thruster (on/off with direction)
 
+//// ros 
+void getDesiredValue(const serial_srvs::DesiredValue::Request &req, serial_srvs::DesiredValue::Response &res)
+{
+  DesiredValue = req.data;
+  res.message = "succesfully send desired value!";
+}
+
+void powerThruster(const std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+  if (req.data) { // power the thruster
+     ifPowerThruster = true;
+     res.message = "successfully power on thrusters!";
+    }
+  else {
+     ifPowerThruster = false;
+     res.message = "successfully power off thrusters!";
+    }
+}
+
 ros::NodeHandle nh;
-geometry_msgs::TransformStamped transf;
+geometry_msgs::TransformStamped transf; // to store the attitude and position of the cubesat
+std_msgs::String debug_thrustPowered_msg;
+std_msgs::Float32 debug_desiredValue_msg;
+std_msgs::Int16 debug_thrustSwitch_msg;
+//std_msgs::String debug_anyMsg_msg;
+
 tf::TransformBroadcaster broadcaster;
-char base_link[] = "/cubesat";
-char odom[] = "/world";
+ros::ServiceServer<serial_srvs::DesiredValue::Request, serial_srvs::DesiredValue::Response> desiredValue_server("desired_value", &getDesiredValue);
+ros::ServiceServer<std_srvs::SetBool::Request, std_srvs::SetBool::Response> thrustPowered_server("thrust_powered", &powerThruster);
+ros::Publisher debug_thrustPowered_pub("debug_thrustPowered", &debug_thrustPowered_msg);
+ros::Publisher debug_desiredValue_pub("debug_desiredValue", &debug_desiredValue_msg);
+ros::Publisher debug_thrustSwitch_pub("debug_thrustSwitch", &debug_thrustSwitch_msg);
+//ros::Publisher debug_anyMsg_pub("debug_anyMsg", &debug_anyMsg_msg);
 
 void setup()
 {
+  nh.getHardware() -> setBaud(BAUD);
+  nh.initNode();
+  nh.advertiseService(desiredValue_server);
+  nh.advertiseService(thrustPowered_server);
+  nh.advertise(debug_thrustPowered_pub);
+  nh.advertise(debug_desiredValue_pub);
+  nh.advertise(debug_thrustSwitch_pub);
+  //nh.advertise(debug_anyMsg_pub);
+  broadcaster.init(nh);
+  
+  transf.header.frame_id = "/world";
+  transf.child_frame_id = "/cubesat";
+  
   Wire.begin();
-//  TWBR = 12;  // 400 kbit/sec I2C speed
-  Serial.begin(BAUD);
+  if (SerialDebug) {
+     Serial.begin(BAUD);
+    }
   
   // Set up the interrupt pin, it's set as active high, push-pull
   pinMode(intPin, INPUT);
@@ -291,10 +339,6 @@ void setup()
   digitalWrite(myLed, HIGH);
 
   if (LCD) {
-    display.init(); // Initialize the LCD
-    display.backlight();
-  }
-  if (ATTITUDE_DISPLAY) {
     display.init(); // Initialize the LCD
     display.backlight();
   }
@@ -311,13 +355,13 @@ void setup()
     if (SerialDebug) { 
         Serial.println("MPU9250 is online...");
        }
-
     if (LCD) {
        display.clear();
        display.setCursor(0,0);
        display.print("MPU9250");
        display.setCursor(0,1); display.print("Calibrating..");
       }
+      
     getMres();
     getGres();
     getAres();
@@ -332,9 +376,6 @@ void setup()
 
     calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
     initMPU9250(); 
-    if (SerialDebug) {
-       Serial.println("MPU9250 initialized for active data mode...."); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
-      }
     delay(1000); 
 
     // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
@@ -376,11 +417,6 @@ void setup()
             display.print("CAN'T CONNECT");
             display.setCursor(0,1); display.print("TO AK8963!");
           }
-        if (ATTITUDE_DISPLAY) {
-            display.clear();
-            display.print("CAN'T CONNECT");
-            display.setCursor(0,1); display.print("TO AK8963!");
-           }
         while(1) ; // Loop forever if communication doesn't happen
       }
   }
@@ -394,29 +430,20 @@ void setup()
        display.print("CAN'T CONNECT");
        display.setCursor(0,1); display.print("TO MPU9250!");
       }
-    if (ATTITUDE_DISPLAY) {
-       display.clear();
-       display.print("CAN'T CONNECT");
-       display.setCursor(0,1); display.print("TO MPU9250!");
-      }
     while(1) ; // Loop forever if communication doesn't happen
   }
   
-  if (ATTITUDE_DISPLAY) {
+  if (LCD) {
        display.clear();
        display.print("Successfully");
        display.setCursor(0,1); display.print("connects!");
       }
 
-  initModulator();
+  ifPowerThruster = false;
+  DesiredValue = 0; // the angle we want to track. DesiredValue = 0 represents pointing toward North.
+  initModulator(); // must be executed after the desired value is set.
   currentTime = 0;
   ProgramBeginTime = millis()/1000;
-
-  nh.getHardware() -> setBaud(BAUD);
-  nh.initNode();
-  broadcaster.init(nh);
-  transf.header.frame_id = odom;
-  transf.child_frame_id = base_link;
 }
 
 void loop()
@@ -496,7 +523,7 @@ void loop()
     }
   else {
       delt_t = millis() - count;
-      if (delt_t > 500) { // control per 0.5 seconds independent of read rate
+      if (delt_t > CONTROL_PERIOD) { // set control value per 0.5 seconds independent of read rate
          if (SerialDebug) {    
             Serial.print("ax = "); Serial.print((int)1000*ax);  
             Serial.print(" ay = "); Serial.print((int)1000*ay); 
@@ -531,11 +558,9 @@ void loop()
          roll  *= 180.0f / PI;              
 
          // controller
-         Expectation = 0; // the angle we want to track. Expectation = 0 represents pointing toward North.
-
          angle_sensor = getAngle();
          angu_v_sensor = getAnguV();
-         Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
+         Error = DesiredValue - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
        /*  if (SerialDebug) {
             Serial.print("deadband: "); Serial.println(deadband);
             Serial.print("thrust_M_design: "); Serial.println(thrust_M_design);
@@ -586,7 +611,7 @@ void loop()
               }
            }
 
-         activateThruster();
+         switchThruster();
      
          if (SerialDebug) {
             Serial.print("Yaw, Pitch, Roll: ");
@@ -611,6 +636,19 @@ void loop()
          sumCount = 0;
          sum = 0;    
         }
+     
+     if (ROS_REPORT) {
+         if (ifPowerThruster)
+            debug_thrustPowered_msg.data = "ON";
+         else
+            debug_thrustPowered_msg.data = "OFF";
+         debug_desiredValue_msg.data = DesiredValue;
+         debug_thrustSwitch_msg.data = thrust_switch;
+
+         debug_thrustPowered_pub.publish(&debug_thrustPowered_msg);
+         debug_desiredValue_pub.publish(&debug_desiredValue_msg);
+         debug_thrustSwitch_pub.publish(&debug_thrustSwitch_msg);
+        }
         
      if (ATTITUDE_DISPLAY) { // send information to PC and show 3D graph
          transf.transform.translation.x = 0.0;
@@ -622,9 +660,9 @@ void loop()
          transf.transform.rotation.w = q[0];  
          transf.header.stamp = nh.now();
          broadcaster.sendTransform(transf);
-         nh.spinOnce();
         }
-    }       
+    }
+ nh.spinOnce();   
 }
 
 //===================================================================================================================
@@ -1079,16 +1117,14 @@ float getAngle()
 
 float getAnguV()
 {
-  return gz/180*PI;
+  return -gz/180*PI; // -gz is toward Earth
 }
 
 void initModulator()
 {
-  Expectation = 0; // the angle we want to track. Expectation = 0 represents pointing toward North.
-
   angle_sensor = getAngle();
   angu_v_sensor = getAnguV();
-  Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
+  Error = DesiredValue - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
 
   // control value determination
   if (abs(Error) >= uplimit)  
@@ -1109,13 +1145,12 @@ void initModulator()
   time_last_off = -duration_cycle+duration_on;
 }
 
-void activateThruster()
+void switchThruster()
 {
  /* Serial.println(thrust_switch);
   Serial.println("Thrust!"); */
-
-  return;
 }
+
 
 
 

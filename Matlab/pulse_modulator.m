@@ -4,10 +4,11 @@
 % - noise
 % - moment caused by friction (or other disturbance)
 % - When we practice the program (physic systems instead of simulation), there will be constant problems. Calculation of the derivative of switching function is necessary to determine the consition of thrusters.
-% - position of new "zero angle"
 % - check availability of thrusters (clock simulation)
 %% symbol 
 s=tf('s');
+Var=[1.632119 0.002449]; % variance of noise for yaw and gz
+Dev=sqrt(Var)/180*pi;
 
 %% Initialization
 %%%%%%%%%%%%%% time %%%%%%%%%%%%%%
@@ -27,8 +28,8 @@ w=0.239; %width meter
 l=0.464; %length meter
 I=1/12*m*(w^2+l^2); %moment of inertia (kg*meter^2)
 Sys=tf(1,[I 0]); %system transfer function
-angu_v_initial=8/180*pi; %rad/sec
-angle_initial=11.25/180*pi; %rad. positive for counterclockwise, while negative for clockwise
+angu_v_initial=0/180*pi; %rad/sec
+angle_initial=30/180*pi; %rad. positive for counterclockwise, while negative for clockwise
 if angle_initial>pi
     angle_initial=rem(angle_initial,2*pi)-2*pi;
 else
@@ -46,13 +47,13 @@ off_duration_min=0.03; %0.03;
 Control_value_min=thrust_M_design*on_duration_min/(on_duration_min+off_duration_min);
 
 %%%%%%%%%%%%%%% sensor %%%%%%%%%%%%%%
-K_angle=1.5; %feedback gain for angle position   
-K_angu_v=1.2; %feedback gain for angular velocity
+K_angle=0.3; %feedback gain for angle position   
+K_angu_v=0.6; %feedback gain for angular velocity
 
 %%%%%%%% controller %%%%%%%%
 uplimit=thrust_M_design;
-angle_threshold=0.5/180*pi;
-deadband=angle_threshold*K_angle;
+%angle_threshold=0.5/180*pi;
+deadband=uplimit*0.2; %angle_threshold*K_angle;
 
 %%%%%%%%%%%%%% disturbance value %%%%%%%%%%%%%%
 M_passive_dist_value=0.01764;
@@ -78,30 +79,24 @@ for i=1:data_samplingNumber
 end
 
 %%%%%%%%%%%%%%% active disturbance %%%%%%%%%%%%%%%%%
-disturbance_impulse(1,5/drawing_period+1)=10;
-disturbance_impulse(1,10/drawing_period+1)=-8;
-
-angle_response=lsim(Sys/s,disturbance_impulse,testing_period,'zoh')'+angle_response;
-angu_v_response=lsim(Sys,disturbance_impulse,testing_period,'zoh')'+angu_v_response;
-angle_response_thrust=lsim(Sys/s,disturbance_impulse,testing_period,'zoh')'+angle_response_thrust;
-angu_v_response_thrust=lsim(Sys,disturbance_impulse,testing_period,'zoh')'+angu_v_response_thrust;
+% disturbance_impulse(1,5/drawing_period+1)=10;
+% disturbance_impulse(1,10/drawing_period+1)=-8;
+% 
+% angle_response=lsim(Sys/s,disturbance_impulse,testing_period,'zoh')'+angle_response;
+% angu_v_response=lsim(Sys,disturbance_impulse,testing_period,'zoh')'+angu_v_response;
+% angle_response_thrust=lsim(Sys/s,disturbance_impulse,testing_period,'zoh')'+angle_response_thrust;
+% angu_v_response_thrust=lsim(Sys,disturbance_impulse,testing_period,'zoh')'+angu_v_response_thrust;
 
 for sensor_point=1:sensor_samplingNumber
     %%%%%%%%%%%%%% sensor data %%%%%%%%%%%%%%%
-    %%%%%%noise
-%     angle_sensorGet=awgn(angle_response(1,(sensor_point-1)*scale_sensor2data+1),6,'measured');
-%     angu_v_sensorGet=awgn(angu_v_response(1,(sensor_point-1)*scale_sensor2data+1),6,'measured');
-%     angle_sensorGet_thrust=awgn(angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1),6,'measured');
-%     angu_v_sensorGet_thrust=awgn(angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1),6,'measured');
-    %%%%%%
     angle_sensorGet=angle_response(1,(sensor_point-1)*scale_sensor2data+1);
     angu_v_sensorGet=angu_v_response(1,(sensor_point-1)*scale_sensor2data+1);
-    angle_sensorGet_thrust=angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);
-    angu_v_sensorGet_thrust=angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);
+    angle_sensorGet_thrust=angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);%+Dev(1,1)*randn(1);
+    angu_v_sensorGet_thrust=angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);%+Dev(1,2)*randn(1);
     
     %%%%%%%%%%%%%% disturbance determination %%%%%%%%%%%%%%
     M_passive_dist=sign(-angu_v_sensorGet)*M_passive_dist_value;
-    M_passive_dist_thrust=sign(-angu_v_sensorGet_thrust)*M_passive_dist_value;    
+    M_passive_dist_thrust=sign(-angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1))*M_passive_dist_value; % friction is determined by the actual valocity 
     
     %%%%%%%%%%%%%% error determination %%%%%%%%%%%%%%
     Error=Expectation-angle_sensorGet*K_angle-angu_v_sensorGet*K_angu_v;
@@ -167,7 +162,7 @@ for sensor_point=1:sensor_samplingNumber
 
     %%%%%%%%%%%%%% input to the plant %%%%%%%%%%%%%%%
     input=zeros(1,data_samplingNumber); 
-    input(1,(sensor_point-1)*scale_sensor2data+1:(sensor_point-1)*scale_sensor2data+scale_sensor2data)=Control_value-M_passive_dist+M_passive_dist; %set the actual input, which is equal to control value plus friction moment
+    input(1,(sensor_point-1)*scale_sensor2data+1:(sensor_point-1)*scale_sensor2data+scale_sensor2data)=Control_value; %set the actual input, which is equal to control value plus friction moment
   
     switching=zeros(1,data_samplingNumber);
     switching(1,(sensor_point-1)*scale_sensor2data+1:(sensor_point-1)*scale_sensor2data+scale_sensor2data)=thrust_switch*thrust_M;
@@ -189,7 +184,7 @@ end
 
 figure,
 subplot(3,1,1)
-plot(testing_period,angle_response_thrust/pi*180,'b',testing_period,disturbance_impulse,'g'), grid on, title('angle (degree)'), %,testing_period,disturbance_impulse,'g',testing_period,angle_response/pi*180,'r'
+plot(testing_period,angle_response_thrust/pi*180,'b',testing_period,disturbance_impulse,'g',testing_period,angle_response/pi*180,'r'), grid on, title('angle (degree)'), %,testing_period,disturbance_impulse,'g',testing_period,angle_response/pi*180,'r'
 % dim = [0.4 0.8 0.1 0.1];
 % C=num2str(K_angle);
 % note='K-angle =';
@@ -212,6 +207,6 @@ plot(testing_period,angle_response_thrust/pi*180,'b',testing_period,disturbance_
 % annotation('textbox',dim,'String',str,'FitBoxToText','on');
 
 subplot(3,1,2)
-plot(testing_period,angu_v_response_thrust/pi*180,'b'), grid on, title('avgular velocity (degree/s)'); %testing_period,angu_v_response/pi*180,'r',
+plot(testing_period,angu_v_response_thrust/pi*180,'b',testing_period,angu_v_response/pi*180,'r'), grid on, title('avgular velocity (degree/s)'); %testing_period,angu_v_response/pi*180,'r',
 subplot(3,1,3)
-plot(testing_period,Actuator_record,'b'), grid on, title('control value (torque, N-m)'); %testing_period,Control_value_thrust_record,'m',testing_period,Control_value_record,'r',
+plot(testing_period,Actuator_record,'b',testing_period,Control_value_record,'r'), grid on, title('control value (torque, N-m)'); %testing_period,Control_value_thrust_record,'m',testing_period,Control_value_record,'r',

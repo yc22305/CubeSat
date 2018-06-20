@@ -254,8 +254,6 @@ float ax, ay, az, gx, gy, gz, mx, my, mz, mx_temp, my_temp, mz_temp; // variable
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 
-char angle_info[30];
-
 #define MAG_DECLINE_RAD -3.5f/180*PI
 
 // cubesate and thruster properties
@@ -272,7 +270,7 @@ bool ifPowerThruster;
 float K_angle = 0.3f; // feedback gain for angle position   
 float K_angu_v = 0.6f; // feedback gain for angular velocity
 float uplimit = thrust_M_design; 
-float deadband = uplimit*0.75f; // this deadband is determined by experiments.
+float deadband = uplimit*0.2f; // this deadband is determined by experiments.
 float DesiredValue, Error, angle_sensor, angu_v_sensor;
 float Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).

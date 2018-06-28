@@ -26,8 +26,8 @@ w=0.239; %width meter
 l=0.464; %length meter
 I=1/12*m*(w^2+l^2); %moment of inertia (kg*meter^2) %%%%%%%%program test data=0.006
 Sys=tf(1,[I 0]); %system transfer function
-angu_v_initial=8/180*pi; %rad/sec
-angle_initial=200/180*pi; %rad. positive for counterclockwise, while negative for clockwise
+angu_v_initial=0/180*pi; %rad/sec
+angle_initial=30/180*pi; %rad. positive for counterclockwise, while negative for clockwise
 if angle_initial>pi
     angle_initial=rem(angle_initial,2*pi)-2*pi;
 else
@@ -52,6 +52,9 @@ M_passive_dist_value=0.01764;
 angle_threshold=0.5/180*pi;
 angu_v_threshold=1.2*augu_v_changeEachFiring; % threshold during converging.
 angu_v_TracingRange=0.8*augu_v_changeEachFiring; % threshold for fitting optimal angular velocity
+
+%%%%%%%%%%%% user input %%%%%%%%%%%%
+Desired_angle=10/180*pi;
 
 %% control loop
 Actuator_record=zeros(1,data_samplingNumber); %to record the input without pulse modulation function during testing perioed.
@@ -78,7 +81,7 @@ for sensor_point=1:sensor_samplingNumber
 %     angle_sensorGet_thrust=awgn(angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1),6,'measured');
 %     angu_v_sensorGet_thrust=awgn(angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1),6,'measured');
 %     %%%%%%
-    angle_sensorGet_thrust=angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);
+    angle_sensorGet_thrust=angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1)-Desired_angle;
     angu_v_sensorGet_thrust=angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);
     
     %%%%%%%%%%%%%% error determination %%%%%%%%%%%%%%

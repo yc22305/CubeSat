@@ -12,7 +12,7 @@ Dev=sqrt(Var)/180*pi;
 
 %% Initialization
 %%%%%%%%%%%%%% time %%%%%%%%%%%%%%
-sensor_period=0.05;
+sensor_period=0.2;
 drawing_period=0.01; 
 end_time=50;
 
@@ -29,7 +29,7 @@ l=0.464; %length meter
 I=1/12*m*(w^2+l^2); %moment of inertia (kg*meter^2)
 Sys=tf(1,[I 0]); %system transfer function
 angu_v_initial=0/180*pi; %rad/sec
-angle_initial=30/180*pi; %rad. positive for counterclockwise, while negative for clockwise
+angle_initial=30/180*pi; %rad.
 if angle_initial>pi
     angle_initial=rem(angle_initial,2*pi)-2*pi;
 else
@@ -58,8 +58,9 @@ deadband=uplimit*0.2; %angle_threshold*K_angle;
 %%%%%%%%%%%%%% disturbance value %%%%%%%%%%%%%%
 M_passive_dist_value=0.01764;
 
-%%%%%%%%%%%%%% expectation %%%%%%%%%%%%%%
-Expectation=0; %the orientation we want to achieve
+%%%%%%%%%%%%%% expectation and user input %%%%%%%%%%%%%%
+Expectation=0; % the desired value for the control loop input.  
+Desired_angle=10/180*pi; %the orientation we want to achieve.
 
 %% control loop
 Control_value_record=zeros(1,data_samplingNumber); %to record the control value during testing perioed.
@@ -89,10 +90,10 @@ end
 
 for sensor_point=1:sensor_samplingNumber
     %%%%%%%%%%%%%% sensor data %%%%%%%%%%%%%%%
-    angle_sensorGet=angle_response(1,(sensor_point-1)*scale_sensor2data+1);
+    angle_sensorGet=angle_response(1,(sensor_point-1)*scale_sensor2data+1)-Desired_angle;
     angu_v_sensorGet=angu_v_response(1,(sensor_point-1)*scale_sensor2data+1);
-    angle_sensorGet_thrust=angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);%+Dev(1,1)*randn(1);
-    angu_v_sensorGet_thrust=angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1);%+Dev(1,2)*randn(1);
+    angle_sensorGet_thrust=angle_response_thrust(1,(sensor_point-1)*scale_sensor2data+1)-Desired_angle+Dev(1,1)*randn(1);
+    angu_v_sensorGet_thrust=angu_v_response_thrust(1,(sensor_point-1)*scale_sensor2data+1)+Dev(1,2)*randn(1);
     
     %%%%%%%%%%%%%% disturbance determination %%%%%%%%%%%%%%
     M_passive_dist=sign(-angu_v_sensorGet)*M_passive_dist_value;
@@ -100,15 +101,7 @@ for sensor_point=1:sensor_samplingNumber
     
     %%%%%%%%%%%%%% error determination %%%%%%%%%%%%%%
     Error=Expectation-angle_sensorGet*K_angle-angu_v_sensorGet*K_angu_v;
-%     if sign(angle_sensorGet_thrust)==sign(angu_v_sensorGet_thrust)
-%         if abs(angle_sensorGet_thrust)<=angle_threshold
-%             Error_thrust=0;
-%         else
-%             Error_thrust=sign(-angu_v_sensorGet_thrust)*thrust_M;
-%         end
-%     else
-        Error_thrust=Expectation-angle_sensorGet_thrust*K_angle-angu_v_sensorGet_thrust*K_angu_v;
-%     end
+    Error_thrust=Expectation-angle_sensorGet_thrust*K_angle-angu_v_sensorGet_thrust*K_angu_v;
     
     %%%%%%%%%%%%%%%%% control value determination %%%%%%%%%%%%%%%%%
     Control_value=Error; % constant force input

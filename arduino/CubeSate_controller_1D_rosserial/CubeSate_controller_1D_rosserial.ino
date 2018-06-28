@@ -179,7 +179,7 @@
 #endif  
 
 #define AHRS true         // set to false for basic data read
-#define SerialDebug true   // set to true to get Serial output for debugging
+#define SerialDebug false   // set to true to get Serial output for debugging
 #define ROS_REPORT true  // set to ture to get ros messages for debugging
 #define MAG_CALIBRATION false // set true to do magnetic calibration
 #define LCD true // set true to print on LCD
@@ -274,7 +274,7 @@ float uplimit = thrust_M_design;
 float deadband = uplimit*0.2f; // this deadband is determined by experiments.
 
 float Expectation = 0; // The desired value of the control loop, compared with the sum of the current angle and angular velocity. Expectation = 0 should not be changed. 
-float DesiredValue; // the angle we want to track. Angle toward north is 0.
+float DesiredValue; // the angle (degree) we want to track. Angle toward north is 0.
 
 float Error, angle_sensor, angu_v_sensor, Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).
@@ -283,7 +283,7 @@ int thrust_switch; // status of thruster (on/off with direction)
 //// ros 
 void getDesiredValue(const serial_srvs::DesiredValue::Request &req, serial_srvs::DesiredValue::Response &res)
 {
-  DesiredValue = req.data/180*PI;
+  DesiredValue = req.data;
   res.message = "succesfully send desired value!";
 }
 
@@ -564,7 +564,7 @@ void loop()
          roll  *= 180.0f / PI;              
 
          // controller
-         angle_sensor = getAngle() - DesiredValue;
+         angle_sensor = getAngle() - DesiredValue/180*PI;
          angu_v_sensor = getAnguV();
          Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
        /*  if (SerialDebug) {

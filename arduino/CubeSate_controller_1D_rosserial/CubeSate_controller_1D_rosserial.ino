@@ -1,6 +1,7 @@
 /*rosserial_arduino package should be installed*/
 
 #define _SAM3XA_ // For arduino DUE
+#define USE_SERIAL_ONE // data transmitted through Serial1
 #define USE_USBCON // For arduino except Leonardo version
 
 #include <SPI.h>
@@ -279,7 +280,7 @@ int thrust_switch; // status of thruster (on/off with direction)
 //// ros 
 void getDesiredValue(const serial_srvs::DesiredValue::Request &req, serial_srvs::DesiredValue::Response &res)
 {
-  DesiredValue = req.data;
+  DesiredValue = req.data/180*PI;
   res.message = "succesfully send desired value!";
 }
 
@@ -348,104 +349,98 @@ void setup()
      }
   delay(1000); 
 
-  if (c == 0x71) // WHO_AM_I should always be 0x71
-  { 
-    if (SerialDebug) { 
-        Serial.println("MPU9250 is online...");
+  if (c == 0x71) { // WHO_AM_I should always be 0x71
+     if (SerialDebug) { 
+         Serial.println("MPU9250 is online...");
+        }
+     if (LCD) {
+        display.clear();
+        display.setCursor(0,0);
+        display.print("MPU9250");
+        display.setCursor(0,1); display.print("Calibrating..");
        }
-    if (LCD) {
-       display.clear();
-       display.setCursor(0,0);
-       display.print("MPU9250");
-       display.setCursor(0,1); display.print("Calibrating..");
-      }
       
-    getMres();
-    getGres();
-    getAres();
+     getMres();
+     getGres();
+     getAres();
     
-    MPU9250SelfTest(SelfTest); // Start by performing self test and reporting values
-  /*  Serial.print("x-axis self test: acceleration trim within : "); Serial.print(SelfTest[0],1); Serial.println("% of factory value");
-    Serial.print("y-axis self test: acceleration trim within : "); Serial.print(SelfTest[1],1); Serial.println("% of factory value");
-    Serial.print("z-axis self test: acceleration trim within : "); Serial.print(SelfTest[2],1); Serial.println("% of factory value");
-    Serial.print("x-axis self test: gyration trim within : "); Serial.print(SelfTest[3],1); Serial.println("% of factory value");
-    Serial.print("y-axis self test: gyration trim within : "); Serial.print(SelfTest[4],1); Serial.println("% of factory value");
-    Serial.print("z-axis self test: gyration trim within : "); Serial.print(SelfTest[5],1); Serial.println("% of factory value"); */
+     MPU9250SelfTest(SelfTest); // Start by performing self test and reporting values
+   /*  Serial.print("x-axis self test: acceleration trim within : "); Serial.print(SelfTest[0],1); Serial.println("% of factory value");
+     Serial.print("y-axis self test: acceleration trim within : "); Serial.print(SelfTest[1],1); Serial.println("% of factory value");
+     Serial.print("z-axis self test: acceleration trim within : "); Serial.print(SelfTest[2],1); Serial.println("% of factory value");
+     Serial.print("x-axis self test: gyration trim within : "); Serial.print(SelfTest[3],1); Serial.println("% of factory value");
+     Serial.print("y-axis self test: gyration trim within : "); Serial.print(SelfTest[4],1); Serial.println("% of factory value");
+     Serial.print("z-axis self test: gyration trim within : "); Serial.print(SelfTest[5],1); Serial.println("% of factory value"); */
 
-    calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
-    initMPU9250(); 
-    delay(1000); 
+     calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
+     initMPU9250(); 
+     delay(1000); 
 
-    // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
-    byte d = readByte(AK8963_ADDRESS, AK8963_WHO_AM_I);  // Read WHO_AM_I register for AK8963
-    if(SerialDebug) {
-      Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX); Serial.print(" I should be "); Serial.println(0x48, HEX);
-    }
-    delay(1000); 
+     // Read the WHO_AM_I register of the magnetometer, this is a good test of communication
+     byte d = readByte(AK8963_ADDRESS, AK8963_WHO_AM_I);  // Read WHO_AM_I register for AK8963
+     if (SerialDebug) {
+        Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX); Serial.print(" I should be "); Serial.println(0x48, HEX);
+       }
+     delay(1000); 
 
-    if (d == 0x48) { // WHO_AM_I should always be 0x48
-       // Get magnetometer calibration from AK8963 ROM
-       // Serial.println("AK8963 initialized for active data mode...."); // Initialize device for active mode read of magnetometer
-       initAK8963(magCalibration); 
-       if (LCD) {
-          display.clear();
-          display.print("AK8963");
-          display.setCursor(0,1); display.print("Calibrating..");
-         }
-
-       if (MAG_CALIBRATION)
-           magcalMPU9250(magBias, magScale);
-       else {
-           magBias[0] = -86.03; // determined by previous test of the magnetometer
-           magBias[1] = 228.66;
-           magBias[2] = -371.48;
-           magScale[0] = 1.08;
-           magScale[1] = 1.08;
-           magScale[2] = 0.88;   
+     if (d == 0x48) { // WHO_AM_I should always be 0x48
+        if (SerialDebug) { 
+           Serial.println("AK8963 initialized for active data mode...."); // Initialize device for active mode read of magnetometer
           }
-       delay(1000);
-      }
-    else {
-        if (SerialDebug) {
-            Serial.print("Could not connect to AK8963: 0x");
-            Serial.println(d, HEX);
-          }
+        initAK8963(magCalibration); 
         if (LCD) {
-            display.clear();
-            display.print("CAN'T CONNECT");
-            display.setCursor(0,1); display.print("TO AK8963!");
+           display.clear();
+           display.print("AK8963");
+           display.setCursor(0,1); display.print("Calibrating..");
           }
-        while(1) ; // Loop forever if communication doesn't happen
-      }
-  }
-  else {
-    if (SerialDebug) {
-       Serial.print("Could not connect to MPU9250: 0x");
-       Serial.println(c, HEX);
-      }
-    if (LCD) {
-       display.clear();
-       display.print("CAN'T CONNECT");
-       display.setCursor(0,1); display.print("TO MPU9250!");
-      }
-    while(1) ; // Loop forever if communication doesn't happen
-  }
-  
-  if (LCD) {
-       display.clear();
-       display.print("Successfully");
-       display.setCursor(0,1); display.print("connects!");
-      }
 
-  ifPowerThruster = false;
-  DesiredValue = 0; // the angle we want to track. DesiredValue = 0 represents pointing toward North.
-  initModulator(); // must be executed after the desired value is set.
-  currentTime = 0;
-  ProgramBeginTime = millis()/1000;
+        if (MAG_CALIBRATION)
+            magcalMPU9250(magBias, magScale);
+        else {
+            magBias[0] = -86.03; // determined by previous test of the magnetometer
+            magBias[1] = 228.66;
+            magBias[2] = -371.48;
+            magScale[0] = 1.08;
+            magScale[1] = 1.08;
+            magScale[2] = 0.88;   
+           }
+        delay(1000);
+
+        ifPowerThruster = false;
+        DesiredValue = 0; // the angle we want to track. DesiredValue = 0 represents pointing toward North.
+        initModulator(); // must be executed after the desired value is set.
+        currentTime = 0;
+        ProgramBeginTime = millis()/1000;
+       }
+     else {
+         if (SerialDebug) {
+             Serial.print("Could not connect to AK8963: 0x");
+             Serial.println(d, HEX);
+           }
+         if (LCD) {
+             display.clear();
+             display.print("CAN'T CONNECT");
+             display.setCursor(0,1); display.print("TO AK8963!");
+           }
+         while (1);
+        }
+    }
+  else {
+      if (SerialDebug) {
+         Serial.print("Could not connect to MPU9250: 0x");
+         Serial.println(c, HEX);
+        }
+      if (LCD) {
+         display.clear();
+         display.print("CAN'T CONNECT");
+         display.setCursor(0,1); display.print("TO MPU9250!");
+        }
+      while (1);
+     }
 }
 
 void loop()
-{  
+{   
   // If intPin goes high, all data registers have new data
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {  // On interrupt, check if data ready interrupt
      readAccelData(accelCount);  // Read the x/y/z adc values
@@ -474,7 +469,7 @@ void loop()
     }
   
   Now = micros();
-  deltat = ((Now - lastUpdate)/1000000.0f); // set integration time by time elapsed since last filter update
+  deltat = ((Now - lastUpdate)/1000000.0f); // set integration time by time elapsed since last filter update. using micros() to get more acurate data.
   lastUpdate = Now;
 
   sum += deltat; // sum for averaging filter update rate
@@ -491,33 +486,33 @@ void loop()
   MahonyQuaternionUpdate(-ax, ay, az, gx*PI/180.0f, -gy*PI/180.0f, -gz*PI/180.0f, my, -mx, mz);
   
   if (!AHRS) {
-    delt_t = millis() - count;
-    if (delt_t > 500) {
-       if (SerialDebug) {
-          // Print acceleration values in milligs!
-          Serial.print("X-acceleration: "); Serial.print(1000*ax); Serial.print(" mg ");
-          Serial.print("Y-acceleration: "); Serial.print(1000*ay); Serial.print(" mg ");
-          Serial.print("Z-acceleration: "); Serial.print(1000*az); Serial.println(" mg ");
+      delt_t = millis() - count;
+      if (delt_t > 500) {
+         if (SerialDebug) {
+            // Print acceleration values in milligs!
+            Serial.print("X-acceleration: "); Serial.print(1000*ax); Serial.print(" mg ");
+            Serial.print("Y-acceleration: "); Serial.print(1000*ay); Serial.print(" mg ");
+            Serial.print("Z-acceleration: "); Serial.print(1000*az); Serial.println(" mg ");
  
-          // Print gyro values in degree/sec
-          Serial.print("X-gyro rate: "); Serial.print(gx, 3); Serial.print(" degrees/sec "); 
-          Serial.print("Y-gyro rate: "); Serial.print(gy, 3); Serial.print(" degrees/sec "); 
-          Serial.print("Z-gyro rate: "); Serial.print(gz, 3); Serial.println(" degrees/sec"); 
+            // Print gyro values in degree/sec
+            Serial.print("X-gyro rate: "); Serial.print(gx, 3); Serial.print(" degrees/sec "); 
+            Serial.print("Y-gyro rate: "); Serial.print(gy, 3); Serial.print(" degrees/sec "); 
+            Serial.print("Z-gyro rate: "); Serial.print(gz, 3); Serial.println(" degrees/sec"); 
     
-          // Print mag values in degree/sec
-          Serial.print("X-mag field: "); Serial.print(mx); Serial.print(" mG "); 
-          Serial.print("Y-mag field: "); Serial.print(my); Serial.print(" mG "); 
-          Serial.print("Z-mag field: "); Serial.print(mz); Serial.println(" mG"); 
+            // Print mag values in degree/sec
+            Serial.print("X-mag field: "); Serial.print(mx); Serial.print(" mG "); 
+            Serial.print("Y-mag field: "); Serial.print(my); Serial.print(" mG "); 
+            Serial.print("Z-mag field: "); Serial.print(mz); Serial.println(" mG"); 
  
-          tempCount = readTempData();  // Read the adc values
-          temperature = ((float) tempCount) / 333.87 + 21.0; // Temperature in degrees Centigrade
-          // Print temperature in degrees Centigrade      
-          Serial.print("Temperature is ");  Serial.print(temperature, 1);  Serial.println(" degrees C"); // Print T values to tenths of s degree C
-         }
+            tempCount = readTempData();  // Read the adc values
+            temperature = ((float) tempCount) / 333.87 + 21.0; // Temperature in degrees Centigrade
+            // Print temperature in degrees Centigrade      
+            Serial.print("Temperature is ");  Serial.print(temperature, 1);  Serial.println(" degrees C"); // Print T values to tenths of s degree C
+           }
     
         count = millis();
         digitalWrite(myLed, !digitalRead(myLed));  // toggle led
-      }
+       }
     }
   else {
       delt_t = millis() - count;
@@ -635,7 +630,7 @@ void loop()
          sum = 0;    
         }
      
-     if (ROS_REPORT) {
+      if (ROS_REPORT) {
          if (ifPowerThruster)
             debug_thrustPowered_msg.data = "ON";
          else
@@ -646,9 +641,10 @@ void loop()
          debug_thrustPowered_pub.publish(&debug_thrustPowered_msg);
          debug_desiredValue_pub.publish(&debug_desiredValue_msg);
          debug_thrustSwitch_pub.publish(&debug_thrustSwitch_msg);
+         //debug_anyMsg_pub.publish(&debug_anyMsg_msg);
         }
         
-     if (ATTITUDE_DISPLAY) { // send information to PC and show 3D graph
+      if (ATTITUDE_DISPLAY) { // send information to PC and show 3D graph
          transf.transform.translation.x = 0.0;
          transf.transform.translation.y = 0.0;
          transf.transform.translation.z = 0.0; 
@@ -660,7 +656,8 @@ void loop()
          broadcaster.sendTransform(transf);
         }
     }
- nh.spinOnce();   
+ 
+ nh.spinOnce();
 }
 
 //===================================================================================================================
@@ -1115,7 +1112,7 @@ float getAngle()
 
 float getAnguV()
 {
-  return -gz/180*PI; // -gz is toward Earth
+  return -gz/180*PI; // In the coordinate applied by gyro, z-axis is outward Earth, x-axis it toward North.
 }
 
 void initModulator()

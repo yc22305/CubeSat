@@ -20,9 +20,6 @@
 #define BAUD 57600
 #define CONTROL_PERIOD 200 // set the time interval (millisecond) between each control determination
 
-// Using I2C LCD monochrome 84 x 48 pixel display
-LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
-
 // See also MPU-9250 Register Map and Descriptions, Revision 4.0, RM-MPU-9250A-00, Rev. 1.4, 9/9/2013 for registers not listed in 
 // above document; the MPU9250 and MPU9150 are virtually identical but the latter has a different register map
 // Magnetometer Registers
@@ -182,11 +179,14 @@ LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 c
 #endif  
 
 #define AHRS true         // set to false for basic data read
-#define SerialDebug false   // set to true to get Serial output for debugging
+#define SerialDebug true   // set to true to get Serial output for debugging
 #define ROS_REPORT true  // set to ture to get ros messages for debugging
 #define MAG_CALIBRATION false // set true to do magnetic calibration
 #define LCD true // set true to print on LCD
 #define ATTITUDE_DISPLAY true // set to true to diaplay 3D graph on PC screen
+
+// Using I2C LCD monochrome 84 x 48 pixel display
+LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 // Set initial input parameters
 enum Ascale {
@@ -272,8 +272,11 @@ float K_angle = 0.3f; // feedback gain for angle position
 float K_angu_v = 0.6f; // feedback gain for angular velocity
 float uplimit = thrust_M_design; 
 float deadband = uplimit*0.2f; // this deadband is determined by experiments.
-float DesiredValue, Error, angle_sensor, angu_v_sensor;
-float Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
+
+float Expectation = 0; // The desired value of the control loop, compared with the sum of the current angle and angular velocity. Expectation = 0 should not be changed. 
+float DesiredValue; // the angle we want to track. Angle toward north is 0.
+
+float Error, angle_sensor, angu_v_sensor, Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).
 int thrust_switch; // status of thruster (on/off with direction)
 
@@ -363,16 +366,26 @@ void setup()
      getMres();
      getGres();
      getAres();
-    
-     MPU9250SelfTest(SelfTest); // Start by performing self test and reporting values
-   /*  Serial.print("x-axis self test: acceleration trim within : "); Serial.print(SelfTest[0],1); Serial.println("% of factory value");
-     Serial.print("y-axis self test: acceleration trim within : "); Serial.print(SelfTest[1],1); Serial.println("% of factory value");
-     Serial.print("z-axis self test: acceleration trim within : "); Serial.print(SelfTest[2],1); Serial.println("% of factory value");
-     Serial.print("x-axis self test: gyration trim within : "); Serial.print(SelfTest[3],1); Serial.println("% of factory value");
-     Serial.print("y-axis self test: gyration trim within : "); Serial.print(SelfTest[4],1); Serial.println("% of factory value");
-     Serial.print("z-axis self test: gyration trim within : "); Serial.print(SelfTest[5],1); Serial.println("% of factory value"); */
+
+     if (SerialDebug) {
+        MPU9250SelfTest(SelfTest); // Start by performing self test and reporting values
+        Serial.print("x-axis self test: acceleration trim within : "); Serial.print(SelfTest[0],1); Serial.println("% of factory value");
+        Serial.print("y-axis self test: acceleration trim within : "); Serial.print(SelfTest[1],1); Serial.println("% of factory value");
+        Serial.print("z-axis self test: acceleration trim within : "); Serial.print(SelfTest[2],1); Serial.println("% of factory value");
+        Serial.print("x-axis self test: gyration trim within : "); Serial.print(SelfTest[3],1); Serial.println("% of factory value");
+        Serial.print("y-axis self test: gyration trim within : "); Serial.print(SelfTest[4],1); Serial.println("% of factory value");
+        Serial.print("z-axis self test: gyration trim within : "); Serial.print(SelfTest[5],1); Serial.println("% of factory value"); 
+       }
 
      calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
+     if (SerialDebug) {
+        Serial.print("gyroBias-x: "); Serial.println(gyroBias[0]);
+        Serial.print("gyroBias-y: "); Serial.println(gyroBias[1]);
+        Serial.print("gyroBias-z: "); Serial.println(gyroBias[2]);
+        Serial.print("accelBias-x: "); Serial.println(accelBias[0]);
+        Serial.print("accelBias-y: "); Serial.println(accelBias[1]);
+        Serial.print("accelBias-z: "); Serial.println(accelBias[2]);
+       }
      initMPU9250(); 
      delay(1000); 
 
@@ -407,7 +420,7 @@ void setup()
         delay(1000);
 
         ifPowerThruster = false;
-        DesiredValue = 0; // the angle we want to track. DesiredValue = 0 represents pointing toward North.
+        DesiredValue = 0; // DesiredValue = 0 represents pointing toward North.
         initModulator(); // must be executed after the desired value is set.
         currentTime = 0;
         ProgramBeginTime = millis()/1000;
@@ -551,9 +564,9 @@ void loop()
          roll  *= 180.0f / PI;              
 
          // controller
-         angle_sensor = getAngle();
+         angle_sensor = getAngle() - DesiredValue;
          angu_v_sensor = getAnguV();
-         Error = DesiredValue - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
+         Error = Expectation - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
        /*  if (SerialDebug) {
             Serial.print("deadband: "); Serial.println(deadband);
             Serial.print("thrust_M_design: "); Serial.println(thrust_M_design);

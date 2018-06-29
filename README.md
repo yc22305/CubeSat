@@ -57,7 +57,7 @@ Entering AT mode is nothing more than two steps:
 1. Press the button (only one button) on HC-05, hold it, before power HC-05.  
 2. Power HC-05, and then release the button.  
 
-You should find that the red LED is flashing about every two seconds, which indicates AT mode. The power is 5V.
+You should find that the red LED is flashing about every two seconds, which indicates AT mode. The power supply is 5V.
 
 Bunches of methods for communicating with HC-05 in AT mode could be found on the Internet; here, arduino DUE is set as USB-to-TTL for us to send AT command through serial monitor provided in arduino IDE. Hardware wiring should follow:
 
@@ -68,18 +68,19 @@ Bunches of methods for communicating with HC-05 in AT mode could be found on the
    RX <---> RX0 (pin 0)  
    TX <---> TX0 (pin 1)  
   
-RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) rather than SAM3X chip (the chip for calculating) in DUE. Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to fuse HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
+RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) rather than SAM3X chip (the chip for calculating) in DUE. Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to "fuse" HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
 
+After entering AT mode, we open the Serial monitor provided by arduino IDE to send commands. For example, typing "AT+UART=57600,1,0" will modify the baudrate to 57600, the stop bit to 1, and the parity to 0. Commands and their usage are listed in the website mentioned.
 
-- Hardware wiring:  
+Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simply repowering HC-05 without pressing the button activates normal mode, and wiring is set as the following:
+
    <i>HC-05 <---> Arduino</i>  
    VCC <---> 5.0 V  
    GND <---> GND  
-   RX <---> TX  
-   TX <---> RX
- 
- #### Set the Baudrate
+   RX <---> TX0 (pin 1)
+   TX <---> RX0 (pin 0)
 
+Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify the transmitting pins will be instructed in the "rosserial" section.
 
 ### Relay
 #### [NOTE:]

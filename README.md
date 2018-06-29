@@ -50,15 +50,25 @@ Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 &
 ### Bluetooth HC-05
 Bluetooth HC-05 is used for remote control and monitoring. <b>First</b>, baudrate of HC-05 should be set properly, according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. <b>Second</b>, a virtual port is necessary to be created to revice the data from HC-05. This port is activated by "serial_node.py", a program provided by "rosserial libraries".
 
-#### <Step1:> Setting the Baudrate:
+#### [Step1:] Setting the Baudrate:
 To set the baudrate, we need to switch HC-05 into <b>"AT mode"</b>. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
 
 Entering AT mode is nothing more than two steps:  
 1. Press the button (only one button) on HC-05, hold it, before power HC-05.  
 2. Power HC-05, and then release the button.  
-You should find that the red LED is flashing about every two seconds, which indicates AT mode.
 
+You should find that the red LED is flashing about every two seconds, which indicates AT mode. The power is 5V.
 
+Bunches of methods for communicating with HC-05 in AT mode could be found on the Internet; here, arduino DUE is set as USB-to-TTL for us to send AT command through serial monitor provided in arduino IDE. Hardware wiring should follow:
+
+  <i>HC-05 <---> Arduino</i>  
+   VCC <---> 5.0 V  
+   GND <---> GND
+   GND <---> RESET
+   RX <---> RX0 (pin 0)  
+   TX <---> TX0 (pin 1)  
+  
+RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) rather than SAM3X chip (the chip for calculating) in DUE. Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to fuse HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
 
 
 - Hardware wiring:  

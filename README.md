@@ -45,9 +45,9 @@ LCD is equiped on the CubeSat for indicating some information. It is an optional
 Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 & SDA1". Because "SCL & SDA" is occupied by MPU9250, LCD therefore uses another set. Simply modifying the virtual object "Wire" to "Wire1" (ex: Wire.begin() -> Wire1.begin()) enables "SCL1 & SDA1". "Wire1" is an inherent definition in Arduino DUE. By the way, do not forget to modify the header file. 
 
 ### Bluetooth HC-05
-HC-05 is used for remote communication. Steps to establish this communication are: **First**, baudrate of HC-05 should be set properly, according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. **Second**, a virtual port is necessary to be created to revice the data from HC-05. **Third**, "serial_node.py", a program provided by "rosserial" libraries, is activated to link the CubeSat and our PC through ROS messages.
+HC-05 is used for remote communication. Steps to establish this communication are: **First**, baudrate of HC-05 should be set properly according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. **Second**, a virtual port is necessary to be created to revice the data from HC-05. **Third**, "serial_node.py", a program provided by "rosserial" libraries, is activated to link the CubeSat and our PC.
 
-#### [Step1:] Set the Baudrate:
+#### \<Step1\>: Set the Baudrate:
 To set the baudrate, we need to switch HC-05 into **"AT mode"**. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
 
 Entering AT mode is nothing more than two steps:  
@@ -79,8 +79,7 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
 
 Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify the transmitting pins will be instructed in the "rosserial" section.
 
-#### [Step2:] Create the corresponding virtual port:
-Though  Which port is receiving data from HC-05 should be designated to PC
+#### \<Step2:\> Create the corresponding virtual port:
 
 ### Relay
 #### [NOTE:]

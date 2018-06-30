@@ -1,5 +1,5 @@
 # CubeSat Attitude Control System
-This project aims at a CubeSat attitude control system with thrusters as the accuator. 9-DoF IMU is used to get attitude information, along with pulse modulation algorithm to determine when to activate thrusters. In addition to the control system, ROS (robotic operating system) is utilized for communication with PC or other devices. Remote communication is important for experiments since we can send user commands and get CubeSat status information during its operation, which enhaces safety and convenience. 
+This project aims at a CubeSat attitude control system with thrusters as the accuator. 9-DoF IMU is used to get attitude information, along with pulse modulation algorithm to determine when to activate thrusters. In addition to the control system, ROS (robotic operating system) is utilized for communication with PC or other devices remotely. Remote communication is important for experiments since we can send user commands and get status information during the CubeSat's operation, which enhaces safety and convenience. 
 
 In this reporitory, "arduino" folder has files for the real control system, while "Matlab" folder provides simulation programs. To use the complete functions in this project, simply follow the instruction indicated below.
 - As for "arduino" --- (2018/06/28 updated):  
@@ -45,12 +45,12 @@ LCD is equiped on the CubeSat for indicating some information. It is an optional
    SDA <---> Arduino SDA1 (pull high)  
 
 #### [NOTE:]  
-Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 & SDA1". Because "SCL & SDA" is occupied by MPU9250, LCD therefore uses another set. Simply modifying the virtual object "Wire" to "Wire1" (ex: Wire.begin() -> Wire1.begin()) enables "SCL1 & SDA1". "Wire1" is the inherent definition in Arduino DUE. Additionally, to be distinguish 
+Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 & SDA1". Because "SCL & SDA" is occupied by MPU9250, LCD therefore uses another set. Simply modifying the virtual object "Wire" to "Wire1" (ex: Wire.begin() -> Wire1.begin()) enables "SCL1 & SDA1". "Wire1" is an inherent definition in Arduino DUE. By the way, do not forget to modify the header file. 
 
 ### Bluetooth HC-05
-Bluetooth HC-05 is used for remote control and monitoring. <b>First</b>, baudrate of HC-05 should be set properly, according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. <b>Second</b>, a virtual port is necessary to be created to revice the data from HC-05. This port is activated by "serial_node.py", a program provided by "rosserial libraries".
+HC-05 is used for remote communication. Steps to establish this communication are: <b>First</b>, baudrate of HC-05 should be set properly, according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. <b>Second</b>, a virtual port is necessary to be created to revice the data from HC-05. <b>Third</b>, "serial_node.py", a program provided by "rosserial" libraries, is activated to link the CubeSat and our PC through ROS messages.
 
-#### [Step1:] Setting the Baudrate:
+#### [Step1:] Set the Baudrate:
 To set the baudrate, we need to switch HC-05 into <b>"AT mode"</b>. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
 
 Entering AT mode is nothing more than two steps:  
@@ -77,10 +77,13 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
    <i>HC-05 <---> Arduino</i>  
    VCC <---> 5.0 V  
    GND <---> GND  
-   RX <---> TX0 (pin 1)
-   TX <---> RX0 (pin 0)
+   RX <---> TX0 (pin 1)  
+   TX <---> RX0 (pin 0)  
 
 Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify the transmitting pins will be instructed in the "rosserial" section.
+
+#### [Step2:] Create the corresponding virtual port:
+Though  Which port is receiving data from HC-05 should be designated to PC
 
 ### Relay
 #### [NOTE:]

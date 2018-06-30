@@ -21,13 +21,11 @@ Other files not mentioned above but included in the reporitory are for testing p
 
 ## The Implement of our Control System
 ### Center: Arduino DUE
-Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. <b>First</b>, Instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. <b>Second</b>, DUE has enough memory to include ROS libraries. It is not to say other versions are unacceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
+Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, Instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. It is not to say other versions are unacceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
 
 ### MPU9250
-MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSate_controller_1D_rosserial".
-
-- Hardware wiring:  
-  <i>MPU9250 <---> Arduino</i>  
+MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSate_controller_1D_rosserial". The following is hardware wiring:  
+- *MPU9250 <---> Arduino*  
    VCC <---> 3.3 V  
    GND <---> GND  
    SCL <---> Arduino SCL (pull high)  
@@ -35,10 +33,9 @@ MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetome
    AD0 <---> 3.3 V  
 
 ### LCD (optional)
-LCD is equiped on the CubeSat for indicating some information. It is an optional setup in this project because during experiments, remote monitoring is much more crucial. The code is credited to https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library. To fit this project, slight modification is made and uploaded as "LiquidCrystal_I2C_Wire1.zip".
-
-- Hardware wiring:  
-   <i>LCD <---> Arduino</i>  
+LCD is equiped on the CubeSat for indicating some information. It is an optional setup in this project because during experiments, remote monitoring is much more crucial. The code is credited to https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library. To fit this project, slight modification is made and uploaded as "LiquidCrystal_I2C_Wire1.zip". The following is hardware wiring:
+ 
+- *LCD <---> Arduino*  
    VCC <---> 5.0 V  
    GND <---> GND  
    SCL <---> Arduino SCL1 (pull high)  
@@ -48,10 +45,10 @@ LCD is equiped on the CubeSat for indicating some information. It is an optional
 Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 & SDA1". Because "SCL & SDA" is occupied by MPU9250, LCD therefore uses another set. Simply modifying the virtual object "Wire" to "Wire1" (ex: Wire.begin() -> Wire1.begin()) enables "SCL1 & SDA1". "Wire1" is an inherent definition in Arduino DUE. By the way, do not forget to modify the header file. 
 
 ### Bluetooth HC-05
-HC-05 is used for remote communication. Steps to establish this communication are: <b>First</b>, baudrate of HC-05 should be set properly, according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. <b>Second</b>, a virtual port is necessary to be created to revice the data from HC-05. <b>Third</b>, "serial_node.py", a program provided by "rosserial" libraries, is activated to link the CubeSat and our PC through ROS messages.
+HC-05 is used for remote communication. Steps to establish this communication are: **First**, baudrate of HC-05 should be set properly, according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. **Second**, a virtual port is necessary to be created to revice the data from HC-05. **Third**, "serial_node.py", a program provided by "rosserial" libraries, is activated to link the CubeSat and our PC through ROS messages.
 
 #### [Step1:] Set the Baudrate:
-To set the baudrate, we need to switch HC-05 into <b>"AT mode"</b>. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
+To set the baudrate, we need to switch HC-05 into **"AT mode"**. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
 
 Entering AT mode is nothing more than two steps:  
 1. Press the button (only one button) on HC-05, hold it, before power HC-05.  
@@ -61,7 +58,7 @@ You should find that the red LED is flashing about every two seconds, which indi
 
 Bunches of methods for communicating with HC-05 in AT mode could be found on the Internet; here, arduino DUE is set as USB-to-TTL for us to send AT command through serial monitor provided in arduino IDE. Hardware wiring should follow:
 
-  <i>HC-05 <---> Arduino</i>  
+- *HC-05 <---> Arduino*  
    VCC <---> 5.0 V  
    GND <---> GND
    GND <---> RESET
@@ -74,7 +71,7 @@ After entering AT mode, we open the Serial monitor provided by arduino IDE to se
 
 Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simply repowering HC-05 without pressing the button activates normal mode, and wiring is set as the following:
 
-   <i>HC-05 <---> Arduino</i>  
+- *HC-05 <---> Arduino*  
    VCC <---> 5.0 V  
    GND <---> GND  
    RX <---> TX0 (pin 1)  

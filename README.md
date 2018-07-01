@@ -1,11 +1,12 @@
 # CubeSat Attitude Control System
 This project aims at a CubeSat attitude control system with thrusters as the accuator. 9-DoF IMU is used to get attitude information, along with pulse modulation algorithm to determine when to activate thrusters. In addition to the control system, ROS (robotic operating system) is utilized for remote communication bewteen the CubeSat and our PC. This remote communication system enables users to send commands and get information during the CubeSat's operation, which enhaces safety and convenience. 
 
-In this reporitory, "arduino" folder has files for the real control system, while "Matlab" folder provides simulation programs. To use the complete functions in this project, simply follow the instruction indicated below.
+In this reporitory, "arduino" folder has files for the real control system, while "Matlab" folder provides simulation programs. **To use the complete functions in this project, simply follow the instruction indicated below**:  
+
 - As for "arduino" --- (2018/06/28 updated):  
 "CubeSate_controller_1D_rosserial" folder has the sketches (code file specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the .zip files to the your arduino libraries. They are opensources available on the Internet.
-  2. Set up rosserial libraries for arduino. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
+  2. Set up rosserial libraries for both PC and arduino. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
   
 - As for Matlab --- (2018/06/28 updated):  
 "pulse_modulator" .m file provides a simulation program for the attitude control system. The stretegy is credited to https://www.sciencedirect.com/science/article/pii/S1270963805000908.
@@ -14,7 +15,7 @@ Details of function usage and parameter setting are stated in each code file.
 
 #### [NOTE:]
 1. Other files not mentioned above but included in the reporitory are for testing purposes, or are still under development, even are forgone in this project yet retained. They are not important, but offered for reference.
-2. ROS is operating under Linux envionment, so the PC connected to arduino board must be the ROS master running in Linux. In this case, `ubuntu 16.04` is used and runs in VMWare.
+2. ROS is operating under Linux envionment, so the PC connected to arduino board must be the ROS master running in Linux. In this case, `ubuntu 16.04` is used.
 3. ROS tutorial if needed: http://wiki.ros.org/ROS/Tutorials 
 
 ---
@@ -79,6 +80,7 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
    RX <---> TX0 (pin 1)  
    TX <---> RX0 (pin 0)  
 
+#### [NOTE:]
 Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify the transmitting pins will be instructed in the "rosserial" section.
 
 #### \<Step2:\> Create the corresponding virtual port:
@@ -87,7 +89,7 @@ A virtual port is created to be bound with our HC-05. Before that, tools for blu
 ```
 sudo apt-get install bluetooth bluez bluez-tools rfkill
 ```
-After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use the bluetooth management tool from our shell. Commands such as how to pair bluetooth could be refered to https://wiki.archlinux.org/index.php/bluetooth.
+After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use this bluetooth management tool from our shell. Commands such as how to pair bluetooth could be refered to https://wiki.archlinux.org/index.php/bluetooth.
 - UI interface
 ```
 sudo apt-get install blueman
@@ -96,9 +98,32 @@ A simple tutorial of piaring bluetooth could be referred to https://www.maketech
 
 After pairing bluetooth, use the fllowing command to create a virtual port:
 ```
-sudo apt-get install bluetooth bluez bluez-tools rfkill
+sudo rfcomm bind <port name> <device's address> [channel]
 ```
+`port name` is the virtual port bound with the our `device's address`, and `channel` is the designated channel number. My example is:
+```
+sudo rfcomm bind rfcomm0 98:D3:31:FC:26:44
+```
+`port name` must be named as `rfcomm(N)` like rfcomm0, rfcomm1, etc.. If not named in that way, `port name` will be autimatically named as `rfcomm(N)` instead of what we type. `device's address` could be easily found through bluetooth management tools. The argument of 'channel' could be ignored, and the default value is 1. More information of `rfcomm` command can be referred to https://www.systutorials.com/docs/linux/man/1-rfcomm/.
 
+Now, in our example, you should find a new file named of `rfcomm0` in `/dev` folder. The path `/dev/rfcomm0` will be used in the next step.
+
+#### [NOTE:]
+If you are using a virtual machine such as VMware, every time powering off it will delete the virtual port we create. Thus, we need to create it again in the next time when we would like to use it. I am not sure if the this phenomenon occurs in a real OS.
+
+#### \<Step3:\> Establish the link between the CubeSate and our PC:
+The link is established in PC terminal. Fisrt, command:
+```
+roscore
+```
+Always remember to run `roscore` before running any nodes based on ROS.
+Second, command
+```
+rosrun rosserial_python serial_node.py _port:=/dev/rfcomm0 _baud:=57600
+```
+`_port:=` is appointed to our virtual port corresponding to HC-05, and `_baud:` is to set the baudrate.
+
+If the arduino board successfully publishes and subsribes ROS messages in loops, you will see messages of setting up in the terminal running `rosserial_python`. Any faults leading to time delay (eg: bad quality of hardwares may cause another device to wait for messages, resulting in time delay) may disconnect the link since the PC terminal's waiting is timed out.
 
 ### Relay
 #### [NOTE:]

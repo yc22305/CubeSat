@@ -1,5 +1,5 @@
 # CubeSat Attitude Control System
-This project aims at a CubeSat attitude control system with thrusters as the accuator. 9-DoF IMU is used to get attitude information, along with pulse modulation algorithm to determine when to activate thrusters. In addition to the control system, ROS (robotic operating system) is utilized for communication with PC or other devices remotely. Remote communication is important for experiments since we can send user commands and get status information during the CubeSat's operation, which enhaces safety and convenience. 
+This project aims at a CubeSat attitude control system with thrusters as the accuator. 9-DoF IMU is used to get attitude information, along with pulse modulation algorithm to determine when to activate thrusters. In addition to the control system, ROS (robotic operating system) is utilized for remote communication bewteen the CubeSat and our PC. This remote communication system enables users to send commands and get information during the CubeSat's operation, which enhaces safety and convenience. 
 
 In this reporitory, "arduino" folder has files for the real control system, while "Matlab" folder provides simulation programs. To use the complete functions in this project, simply follow the instruction indicated below.
 - As for "arduino" --- (2018/06/28 updated):  
@@ -12,8 +12,10 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 
 Details of function usage and parameter setting are stated in each code file.
 
-#### [NOTE:]  
-Other files not mentioned above but included in the reporitory are for testing purposes, or are still under development, even are forgone in this project yet retained. They are not important, but offered for reference.
+#### [NOTE:]
+1. Other files not mentioned above but included in the reporitory are for testing purposes, or are still under development, even are forgone in this project yet retained. They are not important, but offered for reference.
+2. ROS is operating under Linux envionment, so the PC connected to arduino board must be the ROS master running in Linux. In this case, `ubuntu 16.04` is used and runs in VMWare.
+3. ROS tutorial if needed: http://wiki.ros.org/ROS/Tutorials 
 
 ---
 #### [Current progress (2018/06/28 updated):]
@@ -21,7 +23,7 @@ Other files not mentioned above but included in the reporitory are for testing p
 
 ## The Implement of our Control System
 ### Center: Arduino DUE
-Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, Instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. It is not to say other versions are unacceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
+Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. Other versions of arduino board might be acceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
 
 ### MPU9250
 MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSate_controller_1D_rosserial". The following is hardware wiring:  
@@ -60,14 +62,14 @@ Bunches of methods for communicating with HC-05 in AT mode could be found on the
 
 - *HC-05 <---> Arduino*  
    VCC <---> 5.0 V  
-   GND <---> GND
-   GND <---> RESET
+   GND <---> GND  
+   GND <---> RESET  
    RX <---> RX0 (pin 0)  
    TX <---> TX0 (pin 1)  
   
-RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) rather than SAM3X chip (the chip for calculating) in DUE. Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to "fuse" HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
+RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) without passing SAM3X chip (the chip for main operation in DUE). Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to "fuse" HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
 
-After entering AT mode, we open the Serial monitor provided by arduino IDE to send commands. For example, typing "AT+UART=57600,1,0" will modify the baudrate to 57600, the stop bit to 1, and the parity to 0. Commands and their usage are listed in the website mentioned. Remember to set Serial monitor baudrate to 38400, which is particular to message transmitting in AT mode and cannot be modified. 
+After entering AT mode, we open the Serial monitor provided by arduino IDE to send commands. For example, typing `AT+UART=57600,1,0` will modify the baudrate to 57600, the stop bit to 1, and the parity to 0. Commands and their usage are listed in the website mentioned. Remember to set Serial monitor baudrate to 38400, which is particular to message transmitting in AT mode and cannot be modified. 
 
 Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simply repowering HC-05 without pressing the button activates normal mode, and wiring is set as the following:
 
@@ -80,9 +82,25 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
 Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify the transmitting pins will be instructed in the "rosserial" section.
 
 #### \<Step2:\> Create the corresponding virtual port:
+A virtual port is created to be bound with our HC-05. Before that, tools for bluetooth management are needed to be installed:
+- console tool
+```
+sudo apt-get install bluetooth bluez bluez-tools rfkill
+```
+After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use the bluetooth management tool from our shell. Commands such as how to pair bluetooth could be refered to https://wiki.archlinux.org/index.php/bluetooth.
+- UI interface
+```
+sudo apt-get install blueman
+```
+A simple tutorial of piaring bluetooth could be referred to https://www.maketecheasier.com/setup-bluetooth-in-linux/.
+
+After pairing bluetooth, use the fllowing command to create a virtual port:
+```
+sudo apt-get install bluetooth bluez bluez-tools rfkill
+```
+
 
 ### Relay
 #### [NOTE:]
 1. It is important to set each hardware at the same GND, or the logics will be wrongly determined.
 2. Implements in remote devices are described in my another reporitory "Arduino_ROS_Communication".
-3. ROS tutorial if needed: http://wiki.ros.org/ROS/Tutorials

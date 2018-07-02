@@ -82,7 +82,7 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
    TX <---> RX0 (pin 0)  
 
 ##### [NOTE:]
-Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify the transmitting pins will be instructed in the "rosserial" section.
+Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify these UART pins will be instructed in the "rosserial" section.
 
 #### \<Step2:\> Create the corresponding virtual port:
 A virtual port is created to be bound with our HC-05. Before that, tools for bluetooth management are needed to be installed:

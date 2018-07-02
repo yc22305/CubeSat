@@ -124,7 +124,7 @@ rosrun rosserial_python serial_node.py _port:=/dev/rfcomm0 _baud:=57600
 ```
 `_port:=` is appointed to our virtual port corresponding to HC-05, and `_baud:=` is to set the baudrate. The default baudrate is 57600.
 
-If the arduino board successfully publishes and subsribes ROS messages in loops, you will see messages of setting up in the terminal running `rosserial_python`. Any faults leading to time delay (eg: bad quality of hardwares may cause another device to wait for messages, resulting in time delay) may disconnect the link since the PC terminal's waiting is timed out.
+If the arduino board successfully publishes and subsribes ROS messages in loops, you will see messages of setting up in the terminal running `serial_node.py`. Any faults leading to time delay (eg: bad quality of hardwares may cause another device to wait for messages, resulting in time delay) may disconnect the link since the PC terminal's waiting is timed out.
 
 ### Relay
 

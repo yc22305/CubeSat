@@ -21,6 +21,7 @@ Details of function usage and parameter setting are stated in each code file.
 
 #### [Current progress (2018/06/28 updated):]
   1-D attitude (yaw) control. Users are able to input, from a remote device, the targeted orientation angle for the CubeSat to track. 
+
 ---
 ## The Implement of our Control System
 ### Center: Arduino DUE
@@ -129,6 +130,7 @@ If the arduino board successfully publishes and subsribes ROS messages in loops,
 
 ##### [NOTE:]
 1. It is important to set each hardware at the same GND, or the logics will be wrongly determined.
+
 ---
 ## The Implement of our Communication System
 ### Rosserial

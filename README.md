@@ -5,17 +5,17 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 
 - As for "arduino" --- (2018/06/28 updated):  
 `CubeSat_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
-  1. Add all the .zip files to the your arduino libraries. They are opensources available on the Internet.
-  2. Set up "rosserial libraries" for both PC and arduino. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
+  1. Add all the `.zip` files to the your arduino libraries. They are opensources available on the Internet.
+  2. Set up `rosserial libraries` for both PC and arduino. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
   3. Generate the header files of ROS message types defined in `serial_srvs`, a message package defined by me. **Please refer to "rosserial" section in this README**.
   
 - As for Matlab --- (2018/06/28 updated):  
-"pulse_modulator" .m file provides a simulation program for the attitude control system. The stretegy is credited to https://www.sciencedirect.com/science/article/pii/S1270963805000908.
+`pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to https://www.sciencedirect.com/science/article/pii/S1270963805000908.
 
 Details of function usage and parameter setting are stated in each code file.
 
 ##### [NOTE:]
-1. Other files not mentioned above but included in the reporitory are for testing purposes, or are still under development, even are forgone in this project yet retained. They are not important, but offered for reference.
+1. Other files not mentioned above but included in the reporitory are for testing purposes, or are still under development, or even are forgone in this project yet retained. They are not important, but offered for reference.
 2. ROS is operating under Linux envionment, so the PC connected to arduino boards must be the ROS master running in Linux. In this project, `ubuntu 16.04` is used.
 3. ROS tutorial if needed: http://wiki.ros.org/ROS/Tutorials. Being familar with ROS is a prerequisite before using rosserial libraries.
 

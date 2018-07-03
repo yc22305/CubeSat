@@ -28,13 +28,16 @@ Details of function usage and parameter setting are stated in each code file.
 Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. Other versions of arduino board might be acceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
 
 ### MPU9250
-MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSate_controller_1D_rosserial". The following is hardware wiring:  
+MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSate_controller_1D_rosserial". The following is hardware wiring:
+
 - *MPU9250 <---> Arduino*  
    VCC <---> 3.3 V  
    GND <---> GND  
    SCL <---> Arduino SCL (pull high)  
    SDA <---> Arduino SDA (pull high)  
    AD0 <---> 3.3 V  
+
+Our CubeSat body frame is referred to the frame with x-axis toward to Earth north, y-axis toward to Earth east, and z-axis toward the ground.
 
 ### LCD (optional)
 LCD is equiped on the CubeSat for indicating some information. It is an optional setup in this project because during experiments, remote monitoring is much more crucial. The code is credited to https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library. To fit this project, slight modification is made and uploaded as "LiquidCrystal_I2C_Wire1.zip". The following is hardware wiring:

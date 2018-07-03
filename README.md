@@ -159,7 +159,7 @@ You could refer to http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Mess
 #### Change the serial port for sending and receiving ROS message
 As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire HC-05 in other way rather than RX0 and TX0. In default, every ROS message will be transmitted through "Serial" in arduino, which is the UART of RX0 & TX0, so HC-05 must be connected to these pin for getting ROS messages. To change the UART, modification in `ros_lib/ArduinoHardware.h` is needed.
 
-The modified "ArduinoHardware.h" is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around line 76. It is a very simple modification so you could easily take a look into the code and make yor own changes.
+The modified "ArduinoHardware.h" is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around *line 76*. It is a very simple modification so you could easily take a look into the code and make yor own changes.
 
 ##### [NOTE:]
 Another method to specify the serial port is discussed here https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/. However, I found some functions only support the class `ArduinoHardware`, such as `tf::TransformBroadcaster::init()`; a new hardware definition may lead to false of using such functions. This might be a negligence of rosserial development team.

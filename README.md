@@ -7,7 +7,7 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 `CubeSate_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the .zip files to the your arduino libraries. They are opensources available on the Internet.
   2. Set up "rosserial libraries" for both PC and arduino. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
-  3. Generate the header files of message types defined in `serial_srvs`, a message package defined by me. **Please refer to "rosserial" section in this README for how to do**.
+  3. Generate the header files of ROS message types defined in `serial_srvs`, a message package defined by me. **Please refer to "rosserial" section in this README**.
   
 - As for Matlab --- (2018/06/28 updated):  
 "pulse_modulator" .m file provides a simulation program for the attitude control system. The stretegy is credited to https://www.sciencedirect.com/science/article/pii/S1270963805000908.
@@ -49,7 +49,7 @@ LCD is equiped on the CubeSat for indicating some information. It is an optional
 Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 & SDA1". Because "SCL & SDA" is occupied by MPU9250, LCD therefore uses another set. Simply modifying the virtual object "Wire" to "Wire1" (ex: Wire.begin() -> Wire1.begin()) enables "SCL1 & SDA1". "Wire1" is an inherent definition in Arduino DUE. By the way, do not forget to modify the header file. 
 
 ### Bluetooth HC-05
-HC-05 is used for remote communication. Steps to establish this communication are: **First**, baudrate of HC-05 should be set properly according to our needs; 57600 is set in this project. Too high or too low baudrate may lead to bad quility information, so trial and error is imperitive. **Second**, a virtual port is necessary to be created to revice the data from HC-05. **Third**, "serial_node.py", a program provided by rosserial libraries, is activated to link the CubeSat and our PC.
+HC-05 is used for remote communication. Steps to establish this communication are: **First**, baudrate of HC-05 should be set properly according to our needs. In this project, 115200 baudrate is set, along with publishing ROS messages in 20 Hz. Too high or too low baudrate may corrupt information, so trial and error is imperitive. **Second**, a virtual port is necessary to be created to revice the data from HC-05. **Third**, "serial_node.py", a program provided by rosserial libraries, is activated to link the CubeSat and our PC.
 
 #### \<Step1\>: Set the Baudrate:
 To set the baudrate, we need to switch HC-05 into **"AT mode"**. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
@@ -71,7 +71,7 @@ Bunches of methods for communicating with HC-05 in AT mode could be found on the
   
 RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) without passing SAM3X chip (the chip for main operation in DUE). Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to "fuse" HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
 
-After entering AT mode, we open the Serial monitor provided by arduino IDE to send commands. For example, typing `AT+UART=57600,1,0` will modify the baudrate to 57600, the stop bit to 1, and the parity to 0. Commands and their usage are listed in the website mentioned. Remember to set Serial monitor baudrate to 38400, which is particular to message transmitting in AT mode and cannot be modified. 
+After entering AT mode, we open the Serial monitor provided by arduino IDE to send commands. For example, typing `AT+UART=115200,1,0` will modify the baudrate to 115200, the stop bit to 1, and the parity to 0. Commands and their usage are listed in the website mentioned. Remember to set Serial monitor baudrate to 38400, which is particular to message transmitting in AT mode and cannot be modified. 
 
 Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simply repowering HC-05 without pressing the button activates normal mode, and wiring is set as the following:
 
@@ -144,11 +144,11 @@ Another setting is about baudrate. `nh.getHardware() -> setBaud(57600)` function
 All the code has existed in "CubeSate_controller_1D_rosserial.ino".
 
 #### Define our own ROS message type in arduino
-After a customized ROS message package is created in your Linux, several steps should be followed to generate the corresponding header file in arduino libraries:
+After a custom ROS message package is created and complied in your Linux, several steps should be followed to generate the corresponding header file in arduino libraries:
 1. Delete the whole `ros_lib` installed in your arduino libraries.
 2. run the command `rosrun rosserial_arduino make_libraries.py .`
 
-I have created a package `serial_srvs` and uploded it in this reporitory. Download it and move it to your catkin workspace. Then, follow the above steps and check `ros_lib` folder in arduino libraries for whether `serial_srvs` package is successfully created. 
+I have created a package `serial_srvs` and uploded it in this reporitory. Download it and move it to your catkin workspace. Then, follow the above steps and check `ros_lib` folder in arduino libraries for whether `serial_srvs` package is successfully created.
 
 ##### [NOTE:]
 You could refer to http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.

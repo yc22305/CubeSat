@@ -1,7 +1,7 @@
 /*rosserial_arduino package should be installed*/
 
 #define _SAM3XA_ // For arduino DUE
-#define USE_SERIAL_ONE // data transmitted through Serial1
+#define USE_SERIAL_ONE // using Serial1 to transmit ROS messages.
 #define USE_USBCON // For arduino except Leonardo version
 
 #include <SPI.h>
@@ -17,8 +17,9 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int16.h>
 
-#define BAUD 57600
+#define BAUD 115200 // baudrate of transmitting messages.
 #define CONTROL_PERIOD 200 // set the time interval (millisecond) between each control determination
+#define ROS_REPORT_PERIOD 50 // set the time interval (millisecond) between each ROS message publishing
 
 // See also MPU-9250 Register Map and Descriptions, Revision 4.0, RM-MPU-9250A-00, Rev. 1.4, 9/9/2013 for registers not listed in 
 // above document; the MPU9250 and MPU9150 are virtually identical but the latter has a different register map
@@ -180,10 +181,8 @@
 
 #define AHRS true         // set to false for basic data read
 #define SerialDebug false   // set to true to get Serial output for debugging
-#define ROS_REPORT true  // set to ture to get ros messages for debugging
 #define MAG_CALIBRATION false // set true to do magnetic calibration
 #define LCD true // set true to print on LCD
-#define ATTITUDE_DISPLAY true // set to true to diaplay 3D graph on PC screen
 
 // Using I2C LCD monochrome 84 x 48 pixel display
 LiquidCrystal_I2C display(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -214,10 +213,6 @@ uint8_t Ascale = AFS_2G;
 uint8_t Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
 uint8_t Mmode = 0x02;        // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
 float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
-  
-// Pin definitions
-int intPin = 12;  // These can be changed, 2 and 3 are the Arduino ext int pins
-int myLed = 13; // Set up pin 13 led for toggling
 
 int16_t accelCount[3];  // Stores the 16-bit signed accelerometer sensor output
 int16_t gyroCount[3];   // Stores the 16-bit signed gyro sensor output
@@ -229,8 +224,8 @@ float   temperature;    // Stores the real internal chip temperature in degrees 
 float   SelfTest[6];    // holds results of gyro and accelerometer self test
 
 // global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
-float GyroMeasError = PI * (40.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)
-float GyroMeasDrift = PI * (0.0f  / 180.0f);   // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
+//float GyroMeasError = PI * (40.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)
+//float GyroMeasDrift = PI * (0.0f  / 180.0f);   // gyroscope measurement drift in rad/s/s (start at 0.0 deg/s/s)
 // There is a tradeoff in the beta parameter between accuracy and response speed.
 // In the original Madgwick study, beta of 0.041 (corresponding to GyroMeasError of 2.7 degrees/s) was found to give optimal accuracy.
 // However, with this value, the LSM9SD0 response time is about 10 seconds to a stable initial quaternion.
@@ -239,17 +234,16 @@ float GyroMeasDrift = PI * (0.0f  / 180.0f);   // gyroscope measurement drift in
 // I haven't noticed any reduction in solution accuracy. This is essentially the I coefficient in a PID control sense; 
 // the bigger the feedback coefficient, the faster the solution converges, usually at the expense of accuracy. 
 // In any case, this is the free parameter in the Madgwick filtering and fusion scheme.
-float beta = sqrt(3.0f / 4.0f) * GyroMeasError;   // compute beta
-float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;   // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
-#define Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter and fusion scheme, Kp for proportional feedback, Ki for integral
+//float beta = sqrt(3.0f / 4.0f) * GyroMeasError;   // compute beta
+//float zeta = sqrt(3.0f / 4.0f) * GyroMeasDrift;   // compute zeta, the other free parameter in the Madgwick scheme usually set to a small or zero value
+#define Kp 2.0f * 5.0f // these are the free parameters in the Mahony filter, Kp for proportional feedback, Ki for integral
 #define Ki 0.0f
 
-uint32_t delt_t = 0; // rate of control value determination
-uint32_t count = 0, sumCount = 0; // used to control display output rate
+uint32_t delt_t = 0, delt_t_ros = 0; // rate of control value determination
+uint32_t count = 0, count_ros = 0; // used to control display output rate
 float pitch, yaw, roll;
-float deltat = 0.0f, sum = 0.0f;        // integration interval for both filter schemes
-uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
-uint32_t Now = 0;        // used to calculate integration interval
+float deltat = 0.0f, sum = 0.0f; // time interval for the filter scheme
+uint32_t lastUpdate = 0, Now = 0, sumCount = 0; // used to calculate rate of the filter scheme
 
 float ax, ay, az, gx, gy, gz, mx, my, mz, mx_temp, my_temp, mz_temp; // variables to hold latest sensor data values 
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
@@ -278,7 +272,7 @@ float DesiredValue; // the angle (degree) we want to track. Angle toward north i
 
 float Error, angle_sensor, angu_v_sensor, Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).
-int thrust_switch; // status of thruster (on/off with direction)
+int thrust_switch; // status (thrust direction) of thruster
 
 //// ros 
 void getDesiredValue(const serial_srvs::DesiredValue::Request &req, serial_srvs::DesiredValue::Response &res)
@@ -333,12 +327,6 @@ void setup()
   if (SerialDebug) {
      Serial.begin(BAUD);
     }
-  
-  // Set up the interrupt pin, it's set as active high, push-pull
-  pinMode(intPin, INPUT);
-  digitalWrite(intPin, LOW);
-  pinMode(myLed, OUTPUT);
-  digitalWrite(myLed, HIGH);
 
   if (LCD) {
     display.init(); // Initialize the LCD
@@ -420,6 +408,7 @@ void setup()
         delay(1000);
 
         ifPowerThruster = false;
+        thrust_switch = 0;
         DesiredValue = 0; // DesiredValue = 0 represents pointing toward North.
         initModulator(); // must be executed after the desired value is set.
         currentTime = 0;
@@ -435,7 +424,7 @@ void setup()
              display.print("CAN'T CONNECT");
              display.setCursor(0,1); display.print("TO AK8963!");
            }
-         while (1);
+         while (1); // fails to connect; waiting for adjusting
         }
     }
   else {
@@ -448,17 +437,15 @@ void setup()
          display.print("CAN'T CONNECT");
          display.setCursor(0,1); display.print("TO MPU9250!");
         }
-      while (1);
+      while (1); // fails to connect; waiting for adjusting
      }
 }
 
 void loop()
 {   
-  // If intPin goes high, all data registers have new data
-  if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {  // On interrupt, check if data ready interrupt
+  if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {  // check if data ready interrupt
      readAccelData(accelCount);  // Read the x/y/z adc values
-     // Now we'll calculate the accleration value into actual g's
-     ax = (float)accelCount[0]*aRes - accelBias[0];  // get actual g value, this depends on scale being set
+     ax = (float)accelCount[0]*aRes - accelBias[0];  // get the actual g value, this depends on scale being set
      ay = (float)accelCount[1]*aRes - accelBias[1];   
      az = (float)accelCount[2]*aRes - accelBias[2];  
    
@@ -469,7 +456,7 @@ void loop()
      gz = (float)gyroCount[2]*gRes;   
 
      readMagData(magCount);  // Read the x/y/z adc values    
-     mx_temp = (float)magCount[0]*mRes*magCalibration[0] - magBias[0];  // get actual magnetometer value, this depends on scale being set
+     mx_temp = (float)magCount[0]*mRes*magCalibration[0] - magBias[0];  // get the actual magnetometer value, this depends on scale being set
      my_temp = (float)magCount[1]*mRes*magCalibration[1] - magBias[1];  
      mz_temp = (float)magCount[2]*mRes*magCalibration[2] - magBias[2]; 
      mx_temp *= magScale[0];
@@ -524,7 +511,6 @@ void loop()
            }
     
         count = millis();
-        digitalWrite(myLed, !digitalRead(myLed));  // toggle led
        }
     }
   else {
@@ -639,11 +625,13 @@ void loop()
            }
 
          count = millis(); 
+         
          sumCount = 0;
          sum = 0;    
         }
-     
-      if (ROS_REPORT) {
+        
+      delt_t_ros = millis() - count_ros;
+      if (delt_t_ros > ROS_REPORT_PERIOD) {
          if (ifPowerThruster)
             debug_thrustPowered_msg.data = "ON";
          else
@@ -655,9 +643,7 @@ void loop()
          debug_desiredValue_pub.publish(&debug_desiredValue_msg);
          debug_thrustSwitch_pub.publish(&debug_thrustSwitch_msg);
          //debug_anyMsg_pub.publish(&debug_anyMsg_msg);
-        }
-        
-      if (ATTITUDE_DISPLAY) { // send information to PC and show 3D graph
+
          transf.transform.translation.x = 0.0;
          transf.transform.translation.y = 0.0;
          transf.transform.translation.z = 0.0; 
@@ -667,6 +653,8 @@ void loop()
          transf.transform.rotation.w = q[0];  
          transf.header.stamp = nh.now();
          broadcaster.sendTransform(transf);
+         
+         count_ros = millis(); 
         }
     }
  

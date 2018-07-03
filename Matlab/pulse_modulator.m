@@ -1,10 +1,5 @@
 %%%%%% problems waiting for solutions (incomplete code) %%%%%%%
-% - large error at initial condition, which leads to calculating problem (eg: comparison of Inf)
-% - design of feedback gains, thruster system transfer function, and transform between error and control value (function between error and control value along with deadband) 
-% - noise
-% - moment caused by friction (or other disturbance)
-% - When we practice the program (physic systems instead of simulation), there will be constant problems. Calculation of the derivative of switching function is necessary to determine the consition of thrusters.
-% - check availability of thrusters (clock simulation)
+% - check availability of thrusters
 %% symbol 
 s=tf('s');
 Var=[1.632119 0.002449]; % variance of noise for yaw and gz

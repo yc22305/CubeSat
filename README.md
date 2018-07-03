@@ -142,9 +142,7 @@ If the arduino board successfully publishes and subsribes ROS messages in loops,
 #### Setting up in arduino code
 Different arduino boards may have different initial setup in codes for use of rosserial. In order to adopt rosserial in arduino DUE, two macros should be defined **before including <ros.h>**: `#define _SAM3XA_` and `#define USE_USBCON`. `_SAM3XA_` is for arduino DUE hardware setting, while `USE_USBCON` is for serial communication in each arduino version except Leonardo. Information about the both macros is written in `ros_lib/ArduinoHardware.h`.
 
-Another setting is about baudrate. `nh.getHardware() -> setBaud(57600)` function makes arduino send and receive data in 57600 baudrate. Without the use of this function, the default baudrate is 57600.
-
-All the code has existed in "CubeSat_controller_1D_rosserial.ino".
+Another setting is about baudrate. `nh.getHardware() -> setBaud(115200)` function makes arduino send and receive data in 115200 baudrate. Without the use of this function, the default baudrate is 57600.
 
 #### Define our own ROS message type in arduino
 After a custom ROS message package is created and complied in your Linux, several steps should be followed to generate the corresponding header file in arduino libraries:
@@ -162,7 +160,7 @@ As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire
 The modified "ArduinoHardware.h" is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around *line 76*. It is a very simple modification so you could easily take a look into the code and make yor own changes.
 
 ##### [NOTE:]
-Another method to specify the serial port is discussed here https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/. However, I found some functions only support the class `ArduinoHardware`, such as `tf::TransformBroadcaster::init()`; a new hardware definition may lead to false of using such functions. This might be a negligence of rosserial development team.
+Another method to specify the serial port is discussed here https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/. However, I found some functions only support the class `ArduinoHardware`, such as `tf::TransformBroadcaster::init()`; a new hardware definition may lead to false of using such functions. This might be a negligence of rosserial development.
 
 ##### [NOTE:]
 1. Implements in remote devices are described in my another reporitory "Arduino_ROS_Communication".

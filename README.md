@@ -4,7 +4,7 @@ This project aims at a CubeSat attitude control system with thrusters as the acc
 In this reporitory, "arduino" folder has files for the real control system, while "Matlab" folder provides simulation programs. **To use the complete functions in this project, simply follow the instruction indicated below**:  
 
 - As for "arduino" --- (2018/06/28 updated):  
-`CubeSate_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
+`CubeSat_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the .zip files to the your arduino libraries. They are opensources available on the Internet.
   2. Set up "rosserial libraries" for both PC and arduino. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
   3. Generate the header files of ROS message types defined in `serial_srvs`, a message package defined by me. **Please refer to "rosserial" section in this README**.
@@ -28,7 +28,7 @@ Details of function usage and parameter setting are stated in each code file.
 Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. Other versions of arduino board might be acceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
 
 ### MPU9250
-MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSate_controller_1D_rosserial". The following is hardware wiring:
+MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSat_controller_1D_rosserial". The following is hardware wiring:
 
 - *MPU9250 <---> Arduino*  
    VCC <---> 3.3 V  
@@ -115,7 +115,7 @@ Now, in our example, you should find a new file named of `rfcomm0` in `/dev` fol
 ##### [NOTE:]
 If you are using a virtual machine such as VMware, every time powering off it will delete the virtual port we create. Thus, we need to create it again in the next time when we would like to use it. I am not sure if the this phenomenon occurs in a real OS.
 
-#### \<Step3:\> Establish the link between the CubeSate and PC:
+#### \<Step3:\> Establish the link between the CubeSat and PC:
 The link is established in PC terminal. Fisrt, command:
 ```
 roscore
@@ -123,7 +123,7 @@ roscore
 Always remember to run `roscore` before running any nodes based on ROS.
 Second, command
 ```
-rosrun rosserial_python serial_node.py _port:=/dev/rfcomm0 _baud:=57600
+rosrun rosserial_python serial_node.py _port:=/dev/rfcomm0 _baud:=115200
 ```
 `_port:=` is appointed to our virtual port corresponding to HC-05, and `_baud:=` is to set the baudrate. The default baudrate is 57600.
 
@@ -144,7 +144,7 @@ Different arduino boards may have different initial setup in codes for use of ro
 
 Another setting is about baudrate. `nh.getHardware() -> setBaud(57600)` function makes arduino send and receive data in 57600 baudrate. Without the use of this function, the default baudrate is 57600.
 
-All the code has existed in "CubeSate_controller_1D_rosserial.ino".
+All the code has existed in "CubeSat_controller_1D_rosserial.ino".
 
 #### Define our own ROS message type in arduino
 After a custom ROS message package is created and complied in your Linux, several steps should be followed to generate the corresponding header file in arduino libraries:

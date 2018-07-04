@@ -20,6 +20,7 @@
 #define BAUD 115200 // baudrate of transmitting messages.
 #define CONTROL_PERIOD 200 // set the time interval (millisecond) between each control determination
 #define ROS_REPORT_PERIOD 50 // set the time interval (millisecond) between each ROS message publishing
+#define RANGE_ANGLE_ADJUST 175 // around -180 and 180 (discontinuity) degrees, angle representation should be adjusted to 0~360 to fit the algorithm.
 
 // See also MPU-9250 Register Map and Descriptions, Revision 4.0, RM-MPU-9250A-00, Rev. 1.4, 9/9/2013 for registers not listed in 
 // above document; the MPU9250 and MPU9150 are virtually identical but the latter has a different register map
@@ -220,8 +221,8 @@ int16_t magCount[3];    // Stores the 16-bit signed magnetometer sensor output
 float magCalibration[3] = {0, 0, 0}, magBias[3] = {0, 0, 0}, magScale[3] = {0, 0, 0};  // Factory mag calibration, mag bias, and bias scale factor
 float gyroBias[3] = {0, 0, 0}, accelBias[3] = {0, 0, 0};      // Bias corrections for gyro and accelerometer
 int16_t tempCount;      // temperature raw count output
-float   temperature;    // Stores the real internal chip temperature in degrees Celsius
-float   SelfTest[6];    // holds results of gyro and accelerometer self test
+float temperature;    // Stores the real internal chip temperature in degrees Celsius
+float SelfTest[6];    // holds results of gyro and accelerometer self test
 
 // global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
 //float GyroMeasError = PI * (40.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)
@@ -268,7 +269,7 @@ float uplimit = thrust_M_design;
 float deadband = uplimit*0.2f; // this deadband is determined by experiments.
 
 float Expectation = 0; // The desired value of the control loop, compared with the sum of the current angle and angular velocity. Expectation = 0 should not be changed. 
-float DesiredValue; // the angle (degree) we want to track. Angle toward north is 0.
+float DesiredValue, DesiredValue_input; // the angle (degree) we want to track. Angle toward north is 0. DesiredValue_input is to store the user command, while DesiredValue is adjusted and for the program to calculate with.
 
 float Error, angle_sensor, angu_v_sensor, Control_value, duration_on, duration_cycle, time_last_on, time_last_off, currentTime;
 float ProgramBeginTime; // used to record the beginning time of this program (second).
@@ -277,7 +278,11 @@ int thrust_switch; // status (thrust direction) of thruster
 //// ros 
 void getDesiredValue(const serial_srvs::DesiredValue::Request &req, serial_srvs::DesiredValue::Response &res)
 {
-  DesiredValue = req.data;
+  DesiredValue_input = req.data;
+  if (DesiredValue_input < -RANGE_ANGLE_ADJUST | DesiredValue_input > RANGE_ANGLE_ADJUST)
+     DesiredValue = DesiredValue_input+360; // adjust -180~0 to 180~360
+  else
+     DesiredValue = DesiredValue_input;
   res.message = "succesfully send desired value!";
 }
 
@@ -289,6 +294,7 @@ void powerThruster(const std_srvs::SetBool::Request &req, std_srvs::SetBool::Res
     }
   else {
      ifPowerThruster = false;
+     thrust_switch = 0; // powering off thrusters leads the thrust status to zero.
      res.message = "successfully power off thrusters!";
     }
 }
@@ -636,7 +642,7 @@ void loop()
             debug_thrustPowered_msg.data = "ON";
          else
             debug_thrustPowered_msg.data = "OFF";
-         debug_desiredValue_msg.data = DesiredValue;
+         debug_desiredValue_msg.data = DesiredValue_input;
          debug_thrustSwitch_msg.data = thrust_switch;
 
          debug_thrustPowered_pub.publish(&debug_thrustPowered_msg);
@@ -1108,7 +1114,14 @@ void magcalMPU9250(float * dest1, float * dest2)
 
 float getAngle()
 {
-  return yaw/180*PI;
+  if (DesiredValue_input < -RANGE_ANGLE_ADJUST | DesiredValue_input > RANGE_ANGLE_ADJUST) {
+     if (yaw < 0)
+        return (yaw+360)/180*PI; // adjust -180~0 to 180~360
+     else
+        return yaw/180*PI;
+    }
+  else
+     return yaw/180*PI;
 }
 
 float getAnguV()
@@ -1118,25 +1131,8 @@ float getAnguV()
 
 void initModulator()
 {
-  angle_sensor = getAngle();
-  angu_v_sensor = getAnguV();
-  Error = DesiredValue - angle_sensor*K_angle - angu_v_sensor*K_angu_v;
-
-  // control value determination
-  if (abs(Error) >= uplimit)  
-        Control_value = sign(Error)*thrust_M_design;
-  else
-     {
-      if (abs(Error) >= deadband) 
-          Control_value = Error;
-      else
-          Control_value = 0;
-     }
-
   duration_on = on_duration_min;
-  duration_cycle = thrust_M_design*duration_on/abs(Control_value);
-  if (duration_cycle < duration_on+off_duration_min)
-     duration_cycle = duration_on+off_duration_min;
+  duration_cycle = duration_on+off_duration_min;
   time_last_on = -duration_cycle;
   time_last_off = -duration_cycle+duration_on;
 }

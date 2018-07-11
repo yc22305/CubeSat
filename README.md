@@ -37,7 +37,7 @@ MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetome
    SDA <---> Arduino SDA (pull high)  
    AD0 <---> 3.3 V  
 
-Our CubeSat body frame is referred to the frame with x-axis toward to Earth north, y-axis toward to Earth east, and z-axis toward the ground.
+Our CubeSat attitude is referred to the frame with x-axis toward to Earth north, y-axis toward to Earth east, and z-axis toward the ground. It is important to input the vectors (acceleration, etc.) **relative to the reference frame** into Mahony filter, or the filter output will be messed up.
 
 ### LCD (optional)
 LCD is equiped on the CubeSat for indicating some information. It is an optional setup in this project because during experiments, remote monitoring is much more crucial. The code is credited to https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library. To fit this project, slight modification is made and uploaded as "LiquidCrystal_I2C_Wire1.zip". The following is hardware wiring:
@@ -85,7 +85,7 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
    TX <---> RX0 (pin 0)  
 
 ##### [NOTE:]
-Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. How to modify these UART pins will be instructed in the "rosserial" section.
+Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. The disadvantage of using TX0 and RX0 is that occupying this UART will disable Arduino Serial Monitor (in fact, you could still open the monitor, but this will confuse your PC where to send the data (Serial Monitor or ROS)). Therefore, the implenment in this project is to set TX1 and RX1 connected to HC-05. How to modify these UART pins will be instructed in the "rosserial" section.
 
 #### \<Step2:\> Create the corresponding virtual port:
 A virtual port is created to be bound with our HC-05. Before that, tools for bluetooth management are needed to be installed:

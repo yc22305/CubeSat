@@ -72,11 +72,11 @@ Bunches of methods for communicating with HC-05 in AT mode could be found on the
    RX <---> RX0 (pin 0)  
    TX <---> TX0 (pin 1)  
   
-RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 (where HC-05 is connected) without passing SAM3X chip (the chip for main operation in DUE). Be aware that RX0 and TX0 is named relatively to arduino DUE; that means, connecting RX with RX (TX with TX) leads to "fuse" HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
+RX0 and TX0 in arduino DUE are connected to the corresponding pins of its USB-to-TTL Serial chip, so wiring in this way could bypass information from Serial port (programming port) directly to RX0 and TX0 without passing SAM3X chip (the chip for main operation in DUE). Be aware that RX0 and TX0 are named relatively to arduino DUE; that means, connecting RX with RX (and TX with TX) will "fuse" HC-05 into DUE, as HC-05 is a part of DUE other than an extra device. The RESET pin on DUE must connect to GND for disabling SAM3X chip.
 
 After entering AT mode, we open the Serial monitor provided by arduino IDE to send commands. For example, typing `AT+UART=115200,1,0` will modify the baudrate to 115200, the stop bit to 1, and the parity to 0. Commands and their usage are listed in the website mentioned. Remember to set Serial monitor baudrate to 38400, which is particular to message transmitting in AT mode and cannot be modified. 
 
-Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simply repowering HC-05 without pressing the button activates normal mode, and wiring is set as the following:
+Finally, switch HC-05 back to normal mode and reset the hardware wiring. Repowering HC-05 without pressing the button activates normal mode, and wiring is set as the following:
 
 - *HC-05 <---> Arduino*  
    VCC <---> 5.0 V  
@@ -84,8 +84,7 @@ Finally, we switch HC-05 back to normal mode and reset the hardware wiring. Simp
    RX <---> TX0 (pin 1)  
    TX <---> RX0 (pin 0)  
 
-##### [NOTE:]
-Actually, which TX and RX on DUE are used is up to you, but TX0 and RX0 are defult in "rosserial_arduino" package. The disadvantage of using TX0 and RX0 is that occupying this UART will disable Arduino Serial Monitor (in fact, you could still open the monitor, but this will confuse your PC where to send the data (Serial Monitor or ROS)). Therefore, the implenment in this project is to set TX1 and RX1 connected to HC-05. How to modify these UART pins will be instructed in the "rosserial" section.
+Actually, which TX and RX on DUE are used is up to you (you only need some software setting), but TX0 and RX0 are defult in "rosserial_arduino" package. **In this project, the implement is to set TX1 and RX1 connected to HC-05**. The reason of using TX1 and RX1 instead of TX0 and RX0 is that occupying the latter UART will disable Arduino Serial Monitor (in fact, you could still open the monitor, but this will confuse your PC about which place to send the data to: Serial Monitor or ROS master). **How to modify these UART pins will be instructed in the section "Rosserial: Change the serial port for transmitting ROS message"**.
 
 #### \<Step2:\> Create the corresponding virtual port:
 A virtual port is created to be bound with our HC-05. Before that, tools for bluetooth management are needed to be installed:
@@ -154,7 +153,7 @@ I have created a package `serial_srvs` and uploded it in this reporitory. Downlo
 ##### [NOTE:]
 You could refer to http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.
 
-#### Change the serial port for sending and receiving ROS message
+#### Change the serial port for transmitting ROS message
 As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire HC-05 in other way rather than RX0 and TX0. In default, every ROS message will be transmitted through "Serial" in arduino, which is the UART of RX0 & TX0, so HC-05 must be connected to these pin for getting ROS messages. To change the UART, modification in `ros_lib/ArduinoHardware.h` is needed.
 
 The modified "ArduinoHardware.h" is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around *line 76*. It is a very simple modification so you could easily take a look into the code and make yor own changes.

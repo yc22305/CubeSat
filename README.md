@@ -92,7 +92,7 @@ A virtual port is created to be bound with our HC-05. Before that, tools for blu
 ```
 sudo apt-get install bluetooth bluez bluez-tools rfkill
 ```
-After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use this bluetooth management tool from our shell. Commands such as how to pair bluetooth could be refered to https://wiki.archlinux.org/index.php/bluetooth.
+After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use this bluetooth management tool from our shell. Commands such as how to pair bluetooth could be referred to https://wiki.archlinux.org/index.php/bluetooth.
 - UI interface
 ```
 sudo apt-get install blueman

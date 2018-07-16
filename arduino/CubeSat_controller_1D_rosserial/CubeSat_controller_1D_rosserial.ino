@@ -66,7 +66,7 @@ float temperature;    // Stores the real internal chip temperature in degrees Ce
 #define K_angle 0.3f // feedback gain for angle position   
 #define K_angu_v 0.6f // feedback gain for angular velocity
 #define uplimit thrust_M_design 
-#define deadband uplimit*0.2f // this deadband is determined by experiments.
+#define deadband uplimit*0.25f // this deadband is determined by experiments.
 #define Expectation 0 // The desired value of the control loop, consisting of the current angle and angular velocity. Expectation = 0 should not be changed.
 
 float DesiredValue = 0, DesiredValue_input = 0; // the angle (degree) we want to track. Angle toward north is 0. DesiredValue_input is to store the user command, while DesiredValue is adjusted and for the program to calculate with.
@@ -79,8 +79,8 @@ int thrust_switch = 0; // status (thrust direction) of thruster
 void getDesiredValue(const serial_srvs::DesiredValue::Request &req, serial_srvs::DesiredValue::Response &res)
 {
   DesiredValue_input = req.data;
-  if (DesiredValue_input < -RANGE_ANGLE_ADJUST | DesiredValue_input > RANGE_ANGLE_ADJUST)
-     DesiredValue = DesiredValue_input+360; // adjust -180~0 to 180~360
+  if (DesiredValue_input < -RANGE_ANGLE_ADJUST)
+     DesiredValue = DesiredValue_input+360; // adjust -180~0 to 180~360 when DesiredValue_input is around +-180
   else
      DesiredValue = DesiredValue_input;
   //res.message = "succesfully send desired value!";

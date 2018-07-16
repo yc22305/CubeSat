@@ -28,8 +28,7 @@
 #define RELAY_POSI_YAW 12 // relay four
 
 #define SerialDebug false   // set to true to get Serial output for debugging
-#define MPU9250_CALIBRATION true // set true to do MPU9250 calibration. when calibrating, you can open Arduino Serial Monitor to check the stage and get bias data.
-#define AK8963_CALIBRATION true // set true to do AK8963 calibration. when calibrating, you can open Arduino Serial Monitor to check the stage and get bias data.
+#define CALIBRATION false // set true to do MPU9250 calibration. when calibrating, you can open Arduino Serial Monitor to check the stage and get bias data.
 #define LCD true // set true to print on LCD
 
 // Using I2C monochrome LCD
@@ -139,7 +138,7 @@ void setup()
   digitalWrite(RELAY_POSI_YAW, LOW);
   
   Wire.begin();
-  if (SerialDebug | MPU9250_CALIBRATION | MPU9250_CALIBRATION) {
+  if (SerialDebug | CALIBRATION) {
      Serial.begin(115200);
     }
 

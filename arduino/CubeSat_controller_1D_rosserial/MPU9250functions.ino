@@ -193,7 +193,11 @@ float magCalibration[3] = {0, 0, 0}, magBias[3] = {0, 0, 0}, magScale[3] = {0, 0
 float gyroBias[3] = {0, 0, 0}, accelBias[3] = {0, 0, 0};      // Bias corrections for gyro and accelerometer
 
 // test if successdully connect to IMU by reading the WHO_AM_I register
-void setupIMU() {
+void setupIMU() {  
+  getMres();
+  getGres();
+  getAres();
+  
   byte c = readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);  // Read WHO_AM_I register for MPU-9250
   delay(10);
   if (SerialDebug) {
@@ -203,35 +207,37 @@ void setupIMU() {
      if (SerialDebug) { 
          Serial.println("MPU9250 is online...");
         }
-     if (LCD) {
-        display.clear();
-        display.setCursor(0,0);
-        display.print("MPU9250");
-        display.setCursor(0,1); display.print("Calibrating..");
-       }
-      
-     getMres();
-     getGres();
-     getAres();
-     if (SerialDebug) {
-        MPU9250SelfTest(SelfTest); // Start by performing self test and reporting values
-        Serial.print("x-axis self test: acceleration trim within : "); Serial.print(SelfTest[0],1); Serial.println("% of factory value");
-        Serial.print("y-axis self test: acceleration trim within : "); Serial.print(SelfTest[1],1); Serial.println("% of factory value");
-        Serial.print("z-axis self test: acceleration trim within : "); Serial.print(SelfTest[2],1); Serial.println("% of factory value");
-        Serial.print("x-axis self test: gyration trim within : "); Serial.print(SelfTest[3],1); Serial.println("% of factory value");
-        Serial.print("y-axis self test: gyration trim within : "); Serial.print(SelfTest[4],1); Serial.println("% of factory value");
-        Serial.print("z-axis self test: gyration trim within : "); Serial.print(SelfTest[5],1); Serial.println("% of factory value"); 
-       }
-    // if (MPU9250_CALIBRATION) {
-     Serial.println("Start to calibrate MPU9250. Please put your IMU on a horizontal plane.");
-     calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
-     Serial.print("gyroBias-x: "); Serial.println(gyroBias[0]);
-     Serial.print("gyroBias-y: "); Serial.println(gyroBias[1]);
-     Serial.print("gyroBias-z: "); Serial.println(gyroBias[2]);
-     Serial.print("accelBias-x: "); Serial.println(accelBias[0]);
-     Serial.print("accelBias-y: "); Serial.println(accelBias[1]);
-     Serial.print("accelBias-z: "); Serial.println(accelBias[2]);
 
+     if (CALIBRATION) {
+        Serial.println("Start to calibrate MPU9250. Please put your IMU on a horizontal plane.");
+        calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
+        Serial.print("gyroBias-x: "); Serial.println(gyroBias[0]);
+        Serial.print("gyroBias-y: "); Serial.println(gyroBias[1]);
+        Serial.print("gyroBias-z: "); Serial.println(gyroBias[2]);
+        Serial.print("accelBias-x: "); Serial.println(accelBias[0]);
+        Serial.print("accelBias-y: "); Serial.println(accelBias[1]);
+        Serial.print("accelBias-z: "); Serial.println(accelBias[2]);
+        if (LCD) {
+           display.clear();
+           display.setCursor(0,0);
+           display.print("MPU9250");
+           display.setCursor(0,1); display.print("Calibrating..");
+          }
+       }
+     else {
+        gyroBias[0] = 0.51; // determined by previous test of the magnetometer
+        gyroBias[1] = 2.23;
+        gyroBias[2] = 0.11;
+        accelBias[0] = -0.05;
+        accelBias[1] = 0.02;
+        accelBias[2] = 0.02; 
+        if (LCD) {
+           display.clear();
+           display.setCursor(0,0);
+           display.print("MPU9250");
+           display.setCursor(0,1); display.print("Setting up..");
+          }
+       }
      initMPU9250(); 
      delay(1000); 
 
@@ -245,14 +251,9 @@ void setupIMU() {
         if (SerialDebug) { 
            Serial.println("AK8963 is online..."); // Initialize device for active mode read of magnetometer
           }
-        if (LCD) {
-           display.clear();
-           display.print("AK8963");
-           display.setCursor(0,1); display.print("Calibrating..");
-          }
         
         initAK8963(magCalibration); 
-        if (AK8963_CALIBRATION) {
+        if (CALIBRATION) {
            Serial.println("Start to calibrate AK8963. Please wave your IMU.");
            magcalMPU9250(magBias, magScale);
            Serial.print("magBias-x: "); Serial.println(magBias[0]);
@@ -261,15 +262,25 @@ void setupIMU() {
            Serial.print("magScale-x: "); Serial.println(magScale[0]);
            Serial.print("magScale-y: "); Serial.println(magScale[1]);
            Serial.print("magScale-z: "); Serial.println(magScale[2]);
+           if (LCD) {
+              display.clear();
+              display.print("AK8963");
+              display.setCursor(0,1); display.print("Calibrating..");
+             }
           }
         else {
-            magBias[0] = -86.03; // determined by previous test of the magnetometer
-            magBias[1] = 228.66;
-            magBias[2] = -371.48;
-            magScale[0] = 1.08;
-            magScale[1] = 1.08;
-            magScale[2] = 0.88;   
-           }
+           magBias[0] = 17.40; // determined by previous test of the magnetometer
+           magBias[1] = 57.23;
+           magBias[2] = -381.97;
+           magScale[0] = 1.04;
+           magScale[1] = 1.01;
+           magScale[2] = 0.95;
+           if (LCD) {
+              display.clear();
+              display.print("AK8963");
+              display.setCursor(0,1); display.print("Setting up..");
+             }
+          }
         delay(1000);
 
         CubeMode = 0; // Successfully connects but power off the thrusters

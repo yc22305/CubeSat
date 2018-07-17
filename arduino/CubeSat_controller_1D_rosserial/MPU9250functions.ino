@@ -210,6 +210,12 @@ void setupIMU() {
 
      if (CALIBRATION) {
         Serial.println("Start to calibrate MPU9250. Please put your IMU on a horizontal plane.");
+        if (LCD) {
+           display.clear();
+           display.setCursor(0,0);
+           display.print("MPU9250");
+           display.setCursor(0,1); display.print("Calibrating..");
+          }
         calibrateMPU9250(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers
         Serial.print("gyroBias-x: "); Serial.println(gyroBias[0]);
         Serial.print("gyroBias-y: "); Serial.println(gyroBias[1]);
@@ -217,17 +223,11 @@ void setupIMU() {
         Serial.print("accelBias-x: "); Serial.println(accelBias[0]);
         Serial.print("accelBias-y: "); Serial.println(accelBias[1]);
         Serial.print("accelBias-z: "); Serial.println(accelBias[2]);
-        if (LCD) {
-           display.clear();
-           display.setCursor(0,0);
-           display.print("MPU9250");
-           display.setCursor(0,1); display.print("Calibrating..");
-          }
        }
      else {
-        gyroBias[0] = 0.51; // determined by previous test of the magnetometer
+        gyroBias[0] = 0.11; // determined by previous test of the magnetometer
         gyroBias[1] = 2.23;
-        gyroBias[2] = 0.11;
+        gyroBias[2] = 0.92;
         accelBias[0] = -0.05;
         accelBias[1] = 0.02;
         accelBias[2] = 0.02; 
@@ -255,6 +255,11 @@ void setupIMU() {
         initAK8963(magCalibration); 
         if (CALIBRATION) {
            Serial.println("Start to calibrate AK8963. Please wave your IMU.");
+           if (LCD) {
+              display.clear();
+              display.print("AK8963");
+              display.setCursor(0,1); display.print("Calibrating..");
+             }
            magcalMPU9250(magBias, magScale);
            Serial.print("magBias-x: "); Serial.println(magBias[0]);
            Serial.print("magBias-y: "); Serial.println(magBias[1]);
@@ -262,16 +267,11 @@ void setupIMU() {
            Serial.print("magScale-x: "); Serial.println(magScale[0]);
            Serial.print("magScale-y: "); Serial.println(magScale[1]);
            Serial.print("magScale-z: "); Serial.println(magScale[2]);
-           if (LCD) {
-              display.clear();
-              display.print("AK8963");
-              display.setCursor(0,1); display.print("Calibrating..");
-             }
           }
         else {
            magBias[0] = 17.40; // determined by previous test of the magnetometer
            magBias[1] = 57.23;
-           magBias[2] = -381.97;
+           magBias[2] = -366.83;
            magScale[0] = 1.04;
            magScale[1] = 1.01;
            magScale[2] = 0.95;
@@ -465,7 +465,10 @@ void initAK8963(float * destination)
 
 
 void initMPU9250()
-{  
+{ 
+ float gyrosensitivity  = 131;   // = 131 LSB/degrees/sec
+ uint8_t data[6]; // data array to hold gyro x, y, z, data
+  
  // wake up device
   writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x00); // Clear sleep mode bit (6), enable all sensors 
   delay(100); // Wait for all registers to reset 
@@ -514,9 +517,26 @@ void initMPU9250()
   // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
   // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips 
   // can join the I2C bus and all can be controlled by the Arduino as master
-   writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22);    
-   writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01);  // Enable data ready (bit 0) interrupt
-   delay(100);
+  writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22);    
+  writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01);  // Enable data ready (bit 0) interrupt
+  delay(100);
+
+  // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
+  data[0] = ((int32_t)(-gyroBias[0]*gyrosensitivity/4)  >> 8) & 0xFF; // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
+  data[1] = ((int32_t)(-gyroBias[0]*gyrosensitivity/4))       & 0xFF; // Biases are additive, so change sign on calculated average gyro biases
+  data[2] = ((int32_t)(-gyroBias[1]*gyrosensitivity/4)  >> 8) & 0xFF;
+  data[3] = ((int32_t)(-gyroBias[1]*gyrosensitivity/4))       & 0xFF;
+  data[4] = ((int32_t)(-gyroBias[2]*gyrosensitivity/4)  >> 8) & 0xFF;
+  data[5] = ((int32_t)(-gyroBias[2]*gyrosensitivity/4))       & 0xFF;
+  
+  // Push gyro biases to hardware registers
+  writeByte(MPU9250_ADDRESS, XG_OFFSET_H, data[0]);
+  writeByte(MPU9250_ADDRESS, XG_OFFSET_L, data[1]);
+  writeByte(MPU9250_ADDRESS, YG_OFFSET_H, data[2]);
+  writeByte(MPU9250_ADDRESS, YG_OFFSET_L, data[3]);
+  writeByte(MPU9250_ADDRESS, ZG_OFFSET_H, data[4]);
+  writeByte(MPU9250_ADDRESS, ZG_OFFSET_L, data[5]);
+  delay(100);
 }
 
 
@@ -584,38 +604,22 @@ void calibrateMPU9250(float * dest1, float * dest2)
     gyro_bias[1]  += (int32_t) gyro_temp[1];
     gyro_bias[2]  += (int32_t) gyro_temp[2];
             
-  }
-    accel_bias[0] /= (int32_t) packet_count; // Normalize sums to get average count biases
-    accel_bias[1] /= (int32_t) packet_count;
-    accel_bias[2] /= (int32_t) packet_count;
-    gyro_bias[0]  /= (int32_t) packet_count;
-    gyro_bias[1]  /= (int32_t) packet_count;
-    gyro_bias[2]  /= (int32_t) packet_count;
+   }
+  accel_bias[0] /= (int32_t) packet_count; // Normalize sums to get average count biases
+  accel_bias[1] /= (int32_t) packet_count;
+  accel_bias[2] /= (int32_t) packet_count;
+  gyro_bias[0]  /= (int32_t) packet_count;
+  gyro_bias[1]  /= (int32_t) packet_count;
+  gyro_bias[2]  /= (int32_t) packet_count;
 
-    accel_bias[2] -= (int32_t) accelsensitivity; // remove gravity from the z-axis accelerometer for bias calculation
-   // if(accel_bias[2] > 0L) {accel_bias[2] -= (int32_t) accelsensitivity;}  
-   // else {accel_bias[2] += (int32_t) accelsensitivity;}\
-   
-// Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
-  data[0] = (-gyro_bias[0]/4  >> 8) & 0xFF; // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
-  data[1] = (-gyro_bias[0]/4)       & 0xFF; // Biases are additive, so change sign on calculated average gyro biases
-  data[2] = (-gyro_bias[1]/4  >> 8) & 0xFF;
-  data[3] = (-gyro_bias[1]/4)       & 0xFF;
-  data[4] = (-gyro_bias[2]/4  >> 8) & 0xFF;
-  data[5] = (-gyro_bias[2]/4)       & 0xFF;
-  
-  // Push gyro biases to hardware registers
-  writeByte(MPU9250_ADDRESS, XG_OFFSET_H, data[0]);
-  writeByte(MPU9250_ADDRESS, XG_OFFSET_L, data[1]);
-  writeByte(MPU9250_ADDRESS, YG_OFFSET_H, data[2]);
-  writeByte(MPU9250_ADDRESS, YG_OFFSET_L, data[3]);
-  writeByte(MPU9250_ADDRESS, ZG_OFFSET_H, data[4]);
-  writeByte(MPU9250_ADDRESS, ZG_OFFSET_L, data[5]);
+  accel_bias[2] -= (int32_t) accelsensitivity; // remove gravity from the z-axis accelerometer for bias calculation
+  // if(accel_bias[2] > 0L) {accel_bias[2] -= (int32_t) accelsensitivity;}  
+  // else {accel_bias[2] += (int32_t) accelsensitivity;}
   
   // Output scaled gyro biases for display in the main program
-  dest1[0] = (float) gyro_bias[0]/(float) gyrosensitivity;  
-  dest1[1] = (float) gyro_bias[1]/(float) gyrosensitivity;
-  dest1[2] = (float) gyro_bias[2]/(float) gyrosensitivity;
+  dest1[0] = (float)gyro_bias[0]/(float)gyrosensitivity;  
+  dest1[1] = (float)gyro_bias[1]/(float)gyrosensitivity;
+  dest1[2] = (float)gyro_bias[2]/(float)gyrosensitivity;
 
   // Output scaled accelerometer biases for display in the main program
   dest2[0] = (float)accel_bias[0]/(float)accelsensitivity; 

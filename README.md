@@ -159,7 +159,7 @@ As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire
 The [modified "ArduinoHardware.h"](https://github.com/yc22305/CubeSat/blob/master/ArduinoHardware.h) is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around **line 76**. It is a very simple modification so you could easily take a look into the code and make yor own changes.
 
 ##### [NOTE:]
-Another method to specify the serial port is discussed [here](https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/). The method could be concluded as defining a new class for costom usage. However, I found some functions only support the class `ArduinoHardware`(the class provided in the rosserial_arduino package, **NOT the one we CREATE!**), such as `tf::TransformBroadcaster::init()`. That is, a new class definition may lead to failure of using such functions. This might be a negligence of rosserial development.
+Another method to specify the serial port is discussed [here](https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/). The method could be concluded as defining a new class for costom usage. However, I found some functions only support the class `ArduinoHardware`(a class provided in the rosserial_arduino package, **NOT the one we CREATE!**), such as `tf::TransformBroadcaster::init()`. That is, a new class definition may lead to failure of using such functions. This might be a negligence of rosserial development.
 
 ##### [NOTE:]
 1. Implements in remote devices are described in my another reporitory "Arduino_ROS_Communication".

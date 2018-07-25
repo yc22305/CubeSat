@@ -1,5 +1,5 @@
 # ROS Package for Communication with our CubeSat 
-This package implements ROS nodes on PC to communicate with the Arduino board on our CubeSat through bluetooth or serials. The nodes' function is to receive the information of CubeSat status such as attitude, and send user commands like the angle for tracking.
+This package implements ROS nodes on PC to communicate with the Arduino board adopted by our CubeSat through bluetooth or serials. The nodes' function is to receive the information of CubeSat status such as attitude, and send user commands like the angle for tracking.
 
 To fully use the nodes, `rviz` should be installed. The tutorial: http://wiki.ros.org/rviz/UserGuide.
 ## Topic nodes
@@ -14,7 +14,7 @@ This node is used to receive the following information:
 2. The current desired tracking angle is. Default: 0
 3. The current status of thruster (which thruster is activated)
 
-## tf_displayer (subscriber)
+### tf_displayer (subscriber)
 command:
 ```
 rosrun serial_communication tf_displayer
@@ -26,7 +26,7 @@ This node is used to receive attitude information and publish it to `rviz` for g
 It is normal to get error message at first because tf_displayer node probably still have not receive information from Arduino.
 
 ## Service nodes
-## set_desiredValue (client)
+### set_desiredValue (client)
 command:
 ```
 rosrun serial_communication set_desiredValue
@@ -36,7 +36,7 @@ This node is used to set a desired angle for the CubeSat to track. After the com
 
 Our CubeSat body frame is referred to the frame with x-axis toward to Earth north, y-axis toward to Earth east, and z-axis toward the ground.
 
-## power_thruster (client)
+### power_thruster (client)
 command:
 ```
 rosrun serial_communication power_thruster

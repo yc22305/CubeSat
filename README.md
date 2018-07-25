@@ -7,7 +7,7 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 `CubeSat_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the `.zip` files to the your arduino libraries.
   2. Set up `rosserial libraries` with reference to [the tutorial](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup). **Addtionally, please refer to "Rosserial: [Setting up in arduino code](https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" for possible further setting.**
-  3. Generate the header files of costom ROS message types (defined in the package `serial_srvs`, which is uploaded in this reporitory under `/CubeSat`.) into arduino libraries. **Please refer to "Rosserial: [Define a custom ROS message type in arduino](https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
+  3. Generate the header files of costom ROS message types (defined in the package `serial_srvs`, which is uploaded in this reporitory under `/CubeSat`) into arduino libraries. **Please refer to "Rosserial: [Define a custom ROS message type in arduino](https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
   
 - As for *Matlab* --- (2018/06/28 updated):  
 `pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to [this paper]( https://www.sciencedirect.com/science/article/pii/S1270963805000908).

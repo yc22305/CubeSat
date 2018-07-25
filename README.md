@@ -3,24 +3,23 @@ This project aims at a CubeSat attitude control system with thrusters as the acc
 
 In this reporitory, "arduino" folder has files for the real control system, while "Matlab" folder provides simulation programs. **To use the complete functions in this project, simply follow the instruction indicated below**:  
 
-- As for "arduino" --- (2018/06/28 updated):  
+- As for *arduino* --- (2018/06/28 updated):  
 `CubeSat_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the `.zip` files to the your arduino libraries.
-  2. Set up `rosserial libraries` with reference to [the tutorial](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup). **Please refer to "Rosserial: [Setting up in arduino code](https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" in this README for further necessary setting.**
-  3. Generate the header files of ROS message types defined in `serial_srvs`, my custom message package. **Please refer to "Rosserial: [Define a custom ROS message type in arduino](https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
+  2. Set up `rosserial libraries` with reference to [the tutorial](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup). **Addtionally, please refer to "Rosserial: [Setting up in arduino code](https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" for possible further setting.**
+  3. Generate the header files of costom ROS message types (defined in the package `serial_srvs`, which is uploaded in this reporitory under `/CubeSat`.) into arduino libraries. **Please refer to "Rosserial: [Define a custom ROS message type in arduino](https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
   
-- As for Matlab --- (2018/06/28 updated):  
+- As for *Matlab* --- (2018/06/28 updated):  
 `pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to [this paper]( https://www.sciencedirect.com/science/article/pii/S1270963805000908).
 
-- As for PC_terminal --- (2018/07/25 updated):  
+- As for *PC_terminal* --- (2018/07/25 updated):  
 `serial_communication` is a ROS package for PC to communicate with our CubeSat through bluetooth or serials.
 
 Details of function usage and parameter setting are stated by comments in each code file.
 
 ##### [NOTE:]
-1. Other files not mentioned above but included in the reporitory are for testing purposes, still under development, or even forgone in this project yet retained. They are not important, but offered for reference.
-2. ROS is operating under Linux envionment, so the PC connected to arduino boards must be the ROS master running in Linux. In this project, `ubuntu 16.04` is used.
-3. [ROS tutorial](http://wiki.ros.org/ROS/Tutorials) if needed. Being familar with ROS is a prerequisite before using rosserial libraries.
+1. ROS is operating under Linux envionment, so the PC connected to arduino boards must be the ROS master running in Linux. In this project, `ubuntu 16.04` is used.
+2. [ROS tutorial](http://wiki.ros.org/ROS/Tutorials) if needed. Being familar with ROS is a prerequisite before using rosserial libraries.
 
 #### [Current progress (2018/06/28 updated):]
   1-D attitude (yaw) control. Users are able to input, from a remote device, the target orientation angle for the CubeSat to track. 
@@ -154,13 +153,13 @@ After a custom ROS message package is created and complied in your Linux, severa
 I have created a package `serial_srvs` and uploded it in this reporitory. Download it and move it to your catkin workspace. Then, follow the above steps and check `ros_lib` folder in arduino libraries for whether `serial_srvs` package is successfully created.
 
 ##### [NOTE:]
-1. If you fail to create costom packages in `ros_lib`. Try to power off the PC (or the virtual machine), restart it, and follow the steps above again.  
+1. If you fail to create costom packages in `ros_lib`, try to power off the PC (or the virtual machine), restart it, and follow the steps above again.  
 2. You could refer to [the page](http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages) for information about adding message types. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.
 
 #### Change the serial port for transmitting ROS message
 As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire HC-05 in other way rather than RX0 and TX0. In default, every ROS message will be transmitted through "Serial" in arduino, which is the UART of RX0 & TX0, so HC-05 must be connected to these pin for getting ROS messages. To change the UART, modification in `ros_lib/ArduinoHardware.h` is needed.
 
-The [modified "ArduinoHardware.h"](https://github.com/yc22305/CubeSat/blob/master/ArduinoHardware.h) is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around **line 76**. It is a very simple modification so you could easily take a look into the code and make yor own changes.
+The [modified "ArduinoHardware.h"](https://github.com/yc22305/CubeSat/blob/master/ArduinoHardware.h) is uploaded in this reporitory under `/CubeSat`. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around **line 76**. It is a very simple modification so you could easily take a look into the code and make yor own changes.
 
 ##### [NOTE:]
 Another method to specify the serial port is discussed [here](https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/). The method could be concluded as defining a new class for costom usage. However, I found some functions only support the class `ArduinoHardware` (a class provided in the rosserial_arduino package, **NOT the one we CREATE!**), such as `tf::TransformBroadcaster::init()`. That is, a new class definition may lead to failure of using such functions. This might be a negligence of rosserial development.

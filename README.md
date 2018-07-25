@@ -6,8 +6,8 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 - As for "arduino" --- (2018/06/28 updated):  
 `CubeSat_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the `.zip` files to the your arduino libraries.
-  2. Set up `rosserial libraries`. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup. **Please refer to "Rosserial: [Setting up in arduino code] (https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" in this README for further necessary setting.**
-  3. Generate the header files of ROS message types defined in `serial_srvs`, my custom message package. **Please refer to "Rosserial: [Define a custom ROS message type in arduino] (https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
+  2. Set up `rosserial libraries`. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup. **Please refer to "Rosserial: [Setting up in arduino code](https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" in this README for further necessary setting.**
+  3. Generate the header files of ROS message types defined in `serial_srvs`, my custom message package. **Please refer to "Rosserial: [Define a custom ROS message type in arduino](https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
   
 - As for Matlab --- (2018/06/28 updated):  
 `pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to https://www.sciencedirect.com/science/article/pii/S1270963805000908.
@@ -84,7 +84,7 @@ Finally, switch HC-05 back to normal mode and reset the hardware wiring. Repower
    RX <---> TX0 (pin 1)  
    TX <---> RX0 (pin 0)  
 
-Actually, which TX and RX on DUE are used is up to you (you only need some software setting), but TX0 and RX0 are defult in "rosserial_arduino" package. **In this project, the implement is to set TX1 and RX1 connected to HC-05**. The reason of using TX1 and RX1 instead of TX0 and RX0 is that occupying the latter UART will disable Arduino Serial Monitor (in fact, you could still open the monitor, but this will confuse your PC about which place to send the data to: Serial Monitor or ROS master). **How to modify these UART pins will be instructed in "Rosserial: [Change the serial port for transmitting ROS message] (https://github.com/yc22305/CubeSat#change-the-serial-port-for-transmitting-ros-message)"**.
+Actually, which TX and RX on DUE are used is up to you (you only need some software setting), but TX0 and RX0 are defult in "rosserial_arduino" package. **In this project, the implement is to set TX1 and RX1 connected to HC-05**. The reason of using TX1 and RX1 instead of TX0 and RX0 is that occupying the latter UART will disable Arduino Serial Monitor (in fact, you could still open the monitor, but this will confuse your PC about which place to send the data to: Serial Monitor or ROS master). **How to modify these UART pins will be instructed in "Rosserial: [Change the serial port for transmitting ROS message](https://github.com/yc22305/CubeSat#change-the-serial-port-for-transmitting-ros-message)"**.
 
 #### \<Step2:\> Create the corresponding virtual port:
 A virtual port is created to be bound with our HC-05. Before that, tools for bluetooth management are needed to be installed:

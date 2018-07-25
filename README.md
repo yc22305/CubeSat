@@ -12,6 +12,9 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 - As for Matlab --- (2018/06/28 updated):  
 `pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to [this paper]( https://www.sciencedirect.com/science/article/pii/S1270963805000908).
 
+- As for PC_terminal --- (2018/07/25 updated):
+`serial_communication` is a ROS package for PC to communicate with our CubeSat through bluetooth or serials.
+
 Details of function usage and parameter setting are stated by comments in each code file.
 
 ##### [NOTE:]
@@ -151,7 +154,8 @@ After a custom ROS message package is created and complied in your Linux, severa
 I have created a package `serial_srvs` and uploded it in this reporitory. Download it and move it to your catkin workspace. Then, follow the above steps and check `ros_lib` folder in arduino libraries for whether `serial_srvs` package is successfully created.
 
 ##### [NOTE:]
-You could refer to [the page](http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages) for information about adding message types. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.
+1. If you fail to create costom packages in `ros_lib`. Try to power off the PC (or the virtual machine), restart it, and follow the steps above again.  
+2. You could refer to [the page](http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages) for information about adding message types. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.
 
 #### Change the serial port for transmitting ROS message
 As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire HC-05 in other way rather than RX0 and TX0. In default, every ROS message will be transmitted through "Serial" in arduino, which is the UART of RX0 & TX0, so HC-05 must be connected to these pin for getting ROS messages. To change the UART, modification in `ros_lib/ArduinoHardware.h` is needed.
@@ -159,7 +163,7 @@ As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire
 The [modified "ArduinoHardware.h"](https://github.com/yc22305/CubeSat/blob/master/ArduinoHardware.h) is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around **line 76**. It is a very simple modification so you could easily take a look into the code and make yor own changes.
 
 ##### [NOTE:]
-Another method to specify the serial port is discussed [here](https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/). The method could be concluded as defining a new class for costom usage. However, I found some functions only support the class `ArduinoHardware`(a class provided in the rosserial_arduino package, **NOT the one we CREATE!**), such as `tf::TransformBroadcaster::init()`. That is, a new class definition may lead to failure of using such functions. This might be a negligence of rosserial development.
+Another method to specify the serial port is discussed [here](https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/). The method could be concluded as defining a new class for costom usage. However, I found some functions only support the class `ArduinoHardware` (a class provided in the rosserial_arduino package, **NOT the one we CREATE!**), such as `tf::TransformBroadcaster::init()`. That is, a new class definition may lead to failure of using such functions. This might be a negligence of rosserial development.
 
 ##### [NOTE:]
 1. Implements in remote devices are described in my another reporitory "Arduino_ROS_Communication".

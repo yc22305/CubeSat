@@ -12,7 +12,7 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 - As for Matlab --- (2018/06/28 updated):  
 `pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to [this paper]( https://www.sciencedirect.com/science/article/pii/S1270963805000908).
 
-- As for PC_terminal --- (2018/07/25 updated):
+- As for PC_terminal --- (2018/07/25 updated):  
 `serial_communication` is a ROS package for PC to communicate with our CubeSat through bluetooth or serials.
 
 Details of function usage and parameter setting are stated by comments in each code file.

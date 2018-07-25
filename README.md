@@ -6,18 +6,18 @@ In this reporitory, "arduino" folder has files for the real control system, whil
 - As for "arduino" --- (2018/06/28 updated):  
 `CubeSat_controller_1D_rosserial` folder has the sketches (code files specific for arduino) providing complete functions for this project. To use the code, several libraries should be set up:
   1. Add all the `.zip` files to the your arduino libraries.
-  2. Set up `rosserial libraries`. The tutorial: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup. **Please refer to "Rosserial: [Setting up in arduino code](https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" in this README for further necessary setting.**
+  2. Set up `rosserial libraries` with reference to [the tutorial](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup). **Please refer to "Rosserial: [Setting up in arduino code](https://github.com/yc22305/CubeSat#setting-up-in-arduino-code)" in this README for further necessary setting.**
   3. Generate the header files of ROS message types defined in `serial_srvs`, my custom message package. **Please refer to "Rosserial: [Define a custom ROS message type in arduino](https://github.com/yc22305/CubeSat#define-a-custom-ros-message-type-in-arduino)"**.
   
 - As for Matlab --- (2018/06/28 updated):  
-`pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to https://www.sciencedirect.com/science/article/pii/S1270963805000908.
+`pulse_modulator` is a simulation program for the attitude control system. The stretegy is credited to [this paper]( https://www.sciencedirect.com/science/article/pii/S1270963805000908).
 
 Details of function usage and parameter setting are stated by comments in each code file.
 
 ##### [NOTE:]
 1. Other files not mentioned above but included in the reporitory are for testing purposes, still under development, or even forgone in this project yet retained. They are not important, but offered for reference.
 2. ROS is operating under Linux envionment, so the PC connected to arduino boards must be the ROS master running in Linux. In this project, `ubuntu 16.04` is used.
-3. ROS tutorial if needed: http://wiki.ros.org/ROS/Tutorials. Being familar with ROS is a prerequisite before using rosserial libraries.
+3. [ROS tutorial](http://wiki.ros.org/ROS/Tutorials) if needed. Being familar with ROS is a prerequisite before using rosserial libraries.
 
 #### [Current progress (2018/06/28 updated):]
   1-D attitude (yaw) control. Users are able to input, from a remote device, the target orientation angle for the CubeSat to track. 
@@ -25,7 +25,7 @@ Details of function usage and parameter setting are stated by comments in each c
 ---
 ## The Implement of our Control System
 ### Center: Arduino DUE
-Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on arduino official website https://store.arduino.cc/arduino-due clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. Other versions of arduino board might be acceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
+Among each version of arduino board, arduino DUE is chosen in this project. DUE indeed has several advantages for our implementation. **First**, instead of including <SoftWareSerial.h> to set RX and TX pins, DUE has already defined them in the hardware. Documentation on [arduino official website](https://store.arduino.cc/arduino-due) clearly states the usage of these pins. It is DUE's strength because <SoftWareSerial.h> cannot sustain higher baudrate to transmit data; baudrate of 9600 is probably the maximun to transmit satisfactory data, or data might be contaminated or missed. DUE does not has such problem. **Second**, DUE has enough memory to include ROS libraries. Other versions of arduino board might be acceptable, but ROS libraries may consume so large memory that DUE is undoubtedly a good option.
 
 ### MPU9250
 MPU9250 is a 9-DoF IMU, including an accelerometer, a gyroscope, and a magnetometer. The data reveived from these three sensors are fused to get the attitude of our CubeSat, througn Mahony Filter. The code is credited to https://github.com/kriswiner/MPU9250. To fit this project, slight modification is made and uploaded in the folder "arduino/CubeSat_controller_1D_rosserial". The following is hardware wiring:
@@ -55,7 +55,7 @@ Arduino DUE provides two sets of I2C communication pins: "SCL & SDA" and "SCL1 &
 HC-05 is used for remote communication. Steps to establish this communication are: **First**, baudrate of HC-05 should be set properly according to our needs. In this project, 115200 baudrate is set, along with publishing ROS messages in 20 Hz. Too high or too low baudrate may corrupt information, so trial and error is imperitive. **Second**, a virtual port is necessary to be created to revice the data from HC-05. **Third**, "serial_node.py", a program provided by rosserial libraries, is activated to link the CubeSat and our PC.
 
 #### \<Step1\>: Set the Baudrate:
-To set the baudrate, we need to switch HC-05 into **"AT mode"**. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed here: https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version; if not, it might be version descrepency.
+To set the baudrate, we need to switch HC-05 into **"AT mode"**. "AT mode" is a firmware for users to set up parameters in some devices, which are not limited to HC-05, but others like ESP8266-01 (Wifi module) also adopt this firmware. In AT mode, we are able to use several commands to change the defult parameters, including baudrate; however, there are numerious types and versions of AT mode depending on the devices, despite the similarity. Therefore, we need to find the corresponding AT command list for particular devices. Fortunately, all HC-05s seem to use the same AT commands listed [here]( https://www.itead.cc/wiki/Serial_Port_Bluetooth_Module_(Master/Slave)_:_HC-05#3._Get_firmware_version); if not, it might be version descrepency.
 
 Entering AT mode is nothing more than two steps:  
 1. Press the button (only one button) on HC-05, hold it, before power HC-05.  
@@ -92,12 +92,12 @@ A virtual port is created to be bound with our HC-05. Before that, tools for blu
 ```
 sudo apt-get install bluetooth bluez bluez-tools rfkill
 ```
-After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use this bluetooth management tool from our shell. Commands such as how to pair bluetooth could be referred to https://wiki.archlinux.org/index.php/bluetooth.
+After the installation, open a new terminal (Ctrl+T) and command `bluetoothctl` to use this bluetooth management tool from our shell. Commands such as how to pair bluetooth could be referred to [the website](https://wiki.archlinux.org/index.php/bluetooth).
 - UI interface
 ```
 sudo apt-get install blueman
 ```
-A simple tutorial of piaring bluetooth could be referred to https://www.maketecheasier.com/setup-bluetooth-in-linux/.
+A tutorial of using this interface could be referred to [this page](https://www.maketecheasier.com/setup-bluetooth-in-linux/).
 
 After pairing bluetooth, use the fllowing command to create a virtual port:
 ```
@@ -107,7 +107,7 @@ sudo rfcomm bind <port name> <device's address> [channel]
 ```
 sudo rfcomm bind rfcomm0 98:D3:31:FC:26:44
 ```
-`port name` must be named as `rfcomm(N)` like rfcomm0, rfcomm1, etc.. If not named in that way, `port name` will be autimatically named as `rfcomm(N)` instead of what we type. `device's address` could be easily found through bluetooth management tools. The argument of 'channel' could be ignored, and the default value is 1. More information of `rfcomm` command can be referred to https://www.systutorials.com/docs/linux/man/1-rfcomm/.
+`port name` must be named as `rfcomm(N)` like rfcomm0, rfcomm1, etc.. If not named in that way, `port name` will be autimatically named as `rfcomm(N)` instead of what we type. `device's address` could be easily found through bluetooth management tools. The argument of 'channel' could be ignored, and the default value is 1. Documentation of `rfcomm` command can be referred to [here](https://www.systutorials.com/docs/linux/man/1-rfcomm/).
 
 Now, in our example, you should find a new file named of `rfcomm0` in `/dev` folder. The path `/dev/rfcomm0` will be used in the next step.
 
@@ -136,10 +136,10 @@ If the arduino board successfully publishes and subsribes ROS messages in loops,
 ---
 ## The Implement of our Communication System
 ### Rosserial
-"rosserial" is a good library for communication between devices based on ROS. We focus on "rosserial_arduino" here. The tutorial http://wiki.ros.org/rosserial_arduino/Tutorials provides several examples; however, I recommand to see the examples offered in arduino IDE (example codes will exsit in arduino IDE after rosserial_arduino libraries are installed) because there are more code sources than the tutorial has, including newest examples for "service server" and "server client".
+"rosserial" is a good library for communication between devices based on ROS. We focus on "rosserial_arduino" here. [The tutorial](http://wiki.ros.org/rosserial_arduino/Tutorials) provides several examples; however, I recommand to see the examples offered in arduino IDE (example codes will exsit in arduino IDE after rosserial_arduino libraries are installed) because there are more code sources than the tutorial has, including newest examples for "service server" and "server client".
 
 #### Setting up in arduino code
-Different arduino boards may need different initial setup in codes for the use of rosserial. In **arduino DUE**, two macros should be defined before including <ros.h>: `#define _SAM3XA_` and `#define USE_USBCON`. `_SAM3XA_` is for arduino DUE hardware setting, while `USE_USBCON` is for serial communication in each arduino version except Leonardo. As for other arduino boards, what macros should be defined might be indicated in `ros_lib/ArduinoHardware.h`.
+Different arduino boards may need different initial setup in sketches for the use of rosserial. In **arduino DUE**, two macros should be defined before including <ros.h>: `#define _SAM3XA_` and `#define USE_USBCON`. `_SAM3XA_` is for arduino DUE hardware setting, while `USE_USBCON` is for serial communication in each arduino version except Leonardo. As for other arduino boards, what macros should be defined might be indicated in `ros_lib/ArduinoHardware.h`.
 
 Another setting is about baudrate. `nh.getHardware() -> setBaud(115200)` function makes arduino send and receive data in 115200 baudrate. Without the use of this function, the default baudrate is 57600.
 
@@ -151,15 +151,15 @@ After a custom ROS message package is created and complied in your Linux, severa
 I have created a package `serial_srvs` and uploded it in this reporitory. Download it and move it to your catkin workspace. Then, follow the above steps and check `ros_lib` folder in arduino libraries for whether `serial_srvs` package is successfully created.
 
 ##### [NOTE:]
-You could refer to http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.
+You could refer to [the page](http://wiki.ros.org/rosserial/Tutorials/Adding%20Other%20Messages) for information about adding message types. "rosserial_arduino" itselt is a "rosserial_client" package, and we would like to retain the functions specific to rosserial_arduino, so just replace rosserial_client with rosserial_arduino.
 
 #### Change the serial port for transmitting ROS message
 As mentioned in the fisrt step of "Bluetooth HC-05" section, we are able to wire HC-05 in other way rather than RX0 and TX0. In default, every ROS message will be transmitted through "Serial" in arduino, which is the UART of RX0 & TX0, so HC-05 must be connected to these pin for getting ROS messages. To change the UART, modification in `ros_lib/ArduinoHardware.h` is needed.
 
-The modified "ArduinoHardware.h" is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around **line 76**. It is a very simple modification so you could easily take a look into the code and make yor own changes.
+The [modified "ArduinoHardware.h"](https://github.com/yc22305/CubeSat/blob/master/ArduinoHardware.h) is uploaded in this reporitory. I add a macro `USE_SERIAL_ONE` for users to decide using "Serial" or "Serial1" in arduino; the code line is around **line 76**. It is a very simple modification so you could easily take a look into the code and make yor own changes.
 
 ##### [NOTE:]
-Another method to specify the serial port is discussed here https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/. However, I found some functions only support the class `ArduinoHardware`, such as `tf::TransformBroadcaster::init()`; a new hardware class definition may lead to failure of using such functions. This might be a negligence of rosserial development.
+Another method to specify the serial port is discussed [here](https://answers.ros.org/question/198247/how-to-change-the-serial-port-in-the-rosserial-lib-for-the-arduino-side/). However, I found some functions only support the class `ArduinoHardware`, such as `tf::TransformBroadcaster::init()`; a new hardware class definition may lead to failure of using such functions. This might be a negligence of rosserial development.
 
 ##### [NOTE:]
 1. Implements in remote devices are described in my another reporitory "Arduino_ROS_Communication".
